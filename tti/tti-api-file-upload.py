@@ -37,13 +37,15 @@ with st.container():
     st.write(f"**Base API Endpoint:** `{BASE_API_URL}`")
     st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
+    # User input for the folder name
     st.markdown("---")
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
-        "Enter the S3 folder name:", 
-        # value="default_uploads",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
+        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        label_visibility="collapsed"
+        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
     )
+    
     if user_folder_name and not user_folder_name.endswith('/'):
         user_folder_name += '/'
     elif not user_folder_name:
@@ -54,7 +56,11 @@ with st.container():
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
-    uploaded_file = st.file_uploader("", label_visibility="collapsed")
+    uploaded_file = st.file_uploader(
+        "", 
+        label_visibility="collapsed", 
+        accept_multiple_files=False
+    )
     
     api_url_for_request = None
 
