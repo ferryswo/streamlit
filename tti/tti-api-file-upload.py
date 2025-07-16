@@ -16,9 +16,9 @@ st.markdown("""
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
 
 # Define your base API URL here
-BASE_API_URL = "https://api-end-point.amazonaws.com/dev/ocr-ap-southeast-4/"
+BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev/"
 # Define the fixed bucket name part of your S3 path
-S3_BUCKET_NAME = "bucket/" # Ensure this ends with a slash if it's a directory
+S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/" # Ensure this ends with a slash if it's a directory
 
 with st.container():
     st.markdown('<div class="api-section">', unsafe_allow_html=True)
@@ -56,7 +56,7 @@ with st.container():
         filename = uploaded_file.name
         
         # Construct the full API URL using the user-provided folder name
-        base_api_root = BASE_API_URL.split('/ocr-ap-southeast-4/')[0] + '/'
+        base_api_root = BASE_API_URL.split('/tti-ocr-ap-southeast-1/')[0] + '/'
         
         if not base_api_root.endswith('/'):
             base_api_root += '/'
@@ -77,7 +77,7 @@ if uploaded_file and api_url_for_request: # Check if api_url_for_request has bee
             with st.spinner("Uploading..."):
                 files = {"file": uploaded_file}
                 try:
-                    response = requests.post(api_url_for_request, files=files)
+                    response = requests.put(api_url_for_request, files=files)
                     if response.status_code == 200:
                         st.success(f"✅ Upload successful! Status: {response.status_code}")
                     else:
@@ -91,23 +91,23 @@ if uploaded_file and api_url_for_request: # Check if api_url_for_request has bee
                 except Exception as e:
                     st.error(f"❌ Upload failed: {e}")
     
-    with col2:
-        if st.button("📥 GET Request", use_container_width=True):
-            with st.spinner("Fetching..."):
-                try:
-                    response = requests.get(api_url_for_request)
-                    if response.status_code == 200:
-                        st.success(f"✅ Request successful! Status: {response.status_code}")
-                    else:
-                        st.warning(f"⚠️ Status: {response.status_code}")
+    # with col2:
+        # if st.button("📥 GET Request", use_container_width=True):
+            # with st.spinner("Fetching..."):
+                # try:
+                    # response = requests.get(api_url_for_request)
+                    # if response.status_code == 200:
+                        # st.success(f"✅ Request successful! Status: {response.status_code}")
+                    # else:
+                        # st.warning(f"⚠️ Status: {response.status_code}")
                     
-                    with st.expander("📋 Response Details"):
-                        try:
-                            st.json(response.json())
-                        except ValueError:
-                            st.text(response.text)
-                except Exception as e:
-                    st.error(f"❌ Request failed: {e}")
+                    # with st.expander("📋 Response Details"):
+                        # try:
+                            # st.json(response.json())
+                        # except ValueError:
+                            # st.text(response.text)
+                # except Exception as e:
+                    # st.error(f"❌ Request failed: {e}")
 
 if not uploaded_file:
     st.info("💡 Please select a file to upload")
