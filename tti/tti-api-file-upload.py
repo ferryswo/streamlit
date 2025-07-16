@@ -11,15 +11,16 @@ st.markdown("""
 .upload-section { background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 
+/* Custom CSS to change the file size limit text */
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small {
-    display: none;
+    display: none; /* Hide the original text */
 }
 [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
-    content: 'Limit 10MB per file';
-    display: block;
-    font-size: 0.9em;
-    color: #888;
-    margin-top: 5px;
+    content: 'Limit 10MB per file'; /* Add your custom text */
+    display: block; /* Make sure it's visible */
+    font-size: 0.9em; /* Adjust font size if needed */
+    color: #888; /* Adjust color if needed */
+    margin-top: 5px; /* Add some spacing if needed */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -41,6 +42,9 @@ with st.container():
     st.markdown("---")
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
+        # "Enter the S3 folder name:", 
+        # value="default_uploads",
+        "",
         placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
         label_visibility="collapsed",
         help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
@@ -56,11 +60,13 @@ with st.container():
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
+    # The file_uploader itself doesn't change here
     uploaded_file = st.file_uploader(
         "", 
         label_visibility="collapsed", 
-        accept_multiple_files=False
+        accept_multiple_files=False # Explicitly set to False
     )
+    # uploaded_file = st.file_uploader("", label_visibility="collapsed")
     
     api_url_for_request = None
 
