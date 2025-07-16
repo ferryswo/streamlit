@@ -11,25 +11,21 @@ st.markdown("""
 .upload-section { background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 
-/* Custom CSS to change the file size limit text */
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small {
-    display: none; /* Hide the original text */
+    display: none;
 }
 [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
-    content: 'Limit 10MB per file'; /* Add your custom text */
-    display: block; /* Make sure it's visible */
-    font-size: 0.9em; /* Adjust font size if needed */
-    color: #888; /* Adjust color if needed */
-    margin-top: 5px; /* Add some spacing if needed */
+    content: 'Limit 10MB per file';
+    display: block;
+    font-size: 0.9em;
+    color: #888;
+    margin-top: 5px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
-
-# Define your base API URL here
 BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev"
-# Define the fixed bucket name part of your S3 path
 S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/"
 
 with st.container():
@@ -37,13 +33,9 @@ with st.container():
     st.subheader("🔗 API Configuration")
     st.write(f"**Base API Endpoint:** `{BASE_API_URL}`")
     st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
-    
-    # User input for the folder name
     st.markdown("---")
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
-        # "Enter the S3 folder name:", 
-        # value="default_uploads",
         "",
         placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
         label_visibility="collapsed",
@@ -60,11 +52,10 @@ with st.container():
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
-    # The file_uploader itself doesn't change here
     uploaded_file = st.file_uploader(
         "", 
         label_visibility="collapsed", 
-        accept_multiple_files=False # Explicitly set to False
+        accept_multiple_files=False
     )
     # uploaded_file = st.file_uploader("", label_visibility="collapsed")
     
