@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import time
-import os # Import the os module for path manipulation
+import os
 
 st.set_page_config(page_title="API File Manager", page_icon="📁", layout="wide")
 
@@ -18,7 +18,7 @@ st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_h
 # Define your base API URL here
 BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev"
 # Define the fixed bucket name part of your S3 path
-S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/" # Ensure this ends with a slash if it's a directory
+S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/"
 
 with st.container():
     st.markdown('<div class="api-section">', unsafe_allow_html=True)
@@ -26,18 +26,18 @@ with st.container():
     st.write(f"**Base API Endpoint:** `{BASE_API_URL}`")
     st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     # User input for the folder name
-    st.markdown("---") # Separator for better UI
+    st.markdown("---")
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
         "Enter the S3 folder name:", 
-        value="default_uploads", # A default value is helpful
+        value="default_uploads",
         help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     # Ensure the folder name has a trailing slash if it's meant to be a folder path
     if user_folder_name and not user_folder_name.endswith('/'):
         user_folder_name += '/'
-    elif not user_folder_name: # Handle case where user clears the input
-        user_folder_name = "" # Or set to a default like "root/" if you prefer
+    elif not user_folder_name: 
+        user_folder_name = ""
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -46,21 +46,17 @@ with st.container():
     st.subheader("📤 File Upload")
     uploaded_file = st.file_uploader("", label_visibility="collapsed")
     
-    # Initialize api_url for later use
     api_url_for_request = None
 
     if uploaded_file:
         st.success(f"✅ File selected: {uploaded_file.name} ({uploaded_file.size} bytes)")
         
         filename = uploaded_file.name
-        
-        # Construct the full API URL using the user-provided folder name
         base_api_root = BASE_API_URL.split('/tti-ocr-ap-southeast-1/')[0] + '/'
         
         if not base_api_root.endswith('/'):
             base_api_root += '/'
             
-        # Combine bucket, user-defined folder, and filename
         api_url_for_request = f"{base_api_root}{S3_BUCKET_NAME}{user_folder_name}{filename}"
         
         st.info(f"Generated API URL for request: `{api_url_for_request}`")
@@ -89,24 +85,6 @@ if uploaded_file and api_url_for_request: # Check if api_url_for_request has bee
                             st.text(response.text)
                 except Exception as e:
                     st.error(f"❌ Upload failed: {e}")
-    
-    # with col2:
-        # if st.button("📥 GET Request", use_container_width=True):
-            # with st.spinner("Fetching..."):
-                # try:
-                    # response = requests.get(api_url_for_request)
-                    # if response.status_code == 200:
-                        # st.success(f"✅ Request successful! Status: {response.status_code}")
-                    # else:
-                        # st.warning(f"⚠️ Status: {response.status_code}")
-                    
-                    # with st.expander("📋 Response Details"):
-                        # try:
-                            # st.json(response.json())
-                        # except ValueError:
-                            # st.text(response.text)
-                # except Exception as e:
-                    # st.error(f"❌ Request failed: {e}")
 
 if not uploaded_file:
     st.info("💡 Please select a file to upload")
