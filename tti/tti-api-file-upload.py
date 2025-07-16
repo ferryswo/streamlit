@@ -39,7 +39,7 @@ with st.container():
         "",
         placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     
     if user_folder_name and not user_folder_name.endswith('/'):
