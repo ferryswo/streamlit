@@ -37,7 +37,7 @@ with st.container():
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
         "",
-        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        placeholder="Enter the S3 folder name (e.g., 'Bungasari', 'Haldin')",
         label_visibility="collapsed",
         help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
