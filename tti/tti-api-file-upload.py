@@ -16,7 +16,7 @@ st.markdown("""
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
 
 # Define your base API URL here
-BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev/"
+BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev"
 # Define the fixed bucket name part of your S3 path
 S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/" # Ensure this ends with a slash if it's a directory
 
@@ -25,14 +25,13 @@ with st.container():
     st.subheader("🔗 API Configuration")
     st.write(f"**Base API Endpoint:** `{BASE_API_URL}`")
     st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
-    
     # User input for the folder name
     st.markdown("---") # Separator for better UI
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
         "Enter the S3 folder name:", 
         value="default_uploads", # A default value is helpful
-        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     # Ensure the folder name has a trailing slash if it's meant to be a folder path
     if user_folder_name and not user_folder_name.endswith('/'):
