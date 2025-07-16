@@ -10,33 +10,45 @@ st.markdown("""
 .main-header { font-size: 2.5rem; color: #1f77b4; margin-bottom: 2rem; }
 .upload-section { background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
+
+/* Custom CSS to change the file size limit text */
+[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
+    display: none; /* Hide the original text */
+}
+[data-testid="stFileUploaderDropzoneInstructions"] > div::after {
+    content: 'Limit 10MB per file'; /* Add your custom text */
+    display: block; /* Make sure it's visible */
+    font-size: 0.8em; /* Adjust font size if needed */
+    color: #888; /* Adjust color if needed */
+    margin-top: 5px; /* Add some spacing if needed */
+}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
 
 # Define your base API URL here
-BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev"
+BASE_API_URL = "https://api-end-point.amazonaws.com/dev/ocr-ap-southeast-4/"
 # Define the fixed bucket name part of your S3 path
-S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/"
+S3_BUCKET_NAME = "bucket/"
 
 with st.container():
     st.markdown('<div class="api-section">', unsafe_allow_html=True)
     st.subheader("🔗 API Configuration")
     st.write(f"**Base API Endpoint:** `{BASE_API_URL}`")
     st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    
     # User input for the folder name
     st.markdown("---")
     st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
         "Enter the S3 folder name:", 
         value="default_uploads",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
     )
-    # Ensure the folder name has a trailing slash if it's meant to be a folder path
     if user_folder_name and not user_folder_name.endswith('/'):
         user_folder_name += '/'
-    elif not user_folder_name: 
+    elif not user_folder_name:
         user_folder_name = ""
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -44,6 +56,7 @@ with st.container():
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
+    # The file_uploader itself doesn't change here
     uploaded_file = st.file_uploader("", label_visibility="collapsed")
     
     api_url_for_request = None
@@ -52,7 +65,8 @@ with st.container():
         st.success(f"✅ File selected: {uploaded_file.name} ({uploaded_file.size} bytes)")
         
         filename = uploaded_file.name
-        base_api_root = BASE_API_URL.split('/tti-ocr-ap-southeast-1/')[0] + '/'
+        
+        base_api_root = BASE_API_URL.split('/ocr-ap-southeast-4/')[0] + '/'
         
         if not base_api_root.endswith('/'):
             base_api_root += '/'
@@ -63,8 +77,7 @@ with st.container():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Use api_url_for_request in the POST and GET buttons
-if uploaded_file and api_url_for_request: # Check if api_url_for_request has been generated
+if uploaded_file and api_url_for_request:
     col1, col2 = st.columns(2, gap="large")
     
     with col1:
@@ -72,7 +85,7 @@ if uploaded_file and api_url_for_request: # Check if api_url_for_request has bee
             with st.spinner("Uploading..."):
                 files = {"file": uploaded_file}
                 try:
-                    response = requests.put(api_url_for_request, files=files)
+                    response = requests.post(api_url_for_request, files=files)
                     if response.status_code == 200:
                         st.success(f"✅ Upload successful! Status: {response.status_code}")
                     else:
@@ -85,6 +98,24 @@ if uploaded_file and api_url_for_request: # Check if api_url_for_request has bee
                             st.text(response.text)
                 except Exception as e:
                     st.error(f"❌ Upload failed: {e}")
+    
+    with col2:
+        if st.button("📥 GET Request", use_container_width=True):
+            with st.spinner("Fetching..."):
+                try:
+                    response = requests.get(api_url_for_request)
+                    if response.status_code == 200:
+                        st.success(f"✅ Request successful! Status: {response.status_code}")
+                    else:
+                        st.warning(f"⚠️ Status: {response.status_code}")
+                    
+                    with st.expander("📋 Response Details"):
+                        try:
+                            st.json(response.json())
+                        except ValueError:
+                            st.text(response.text)
+                except Exception as e:
+                    st.error(f"❌ Request failed: {e}")
 
 if not uploaded_file:
     st.info("💡 Please select a file to upload")
