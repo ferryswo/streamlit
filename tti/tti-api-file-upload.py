@@ -33,8 +33,8 @@ st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_h
 # Define your base API URL here (for both upload and results)
 # IMPORTANT: Use the root of your API Gateway deployment, e.g., "https://1234.execute-api.ap-southeast-4.amazonaws.com/prod"
 # The /prod/upload and /prod/results paths will be appended.
-BASE_API_ROOT_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
-S3_BUCKET_NAME = "ocr-ap-southeast-4/" # Your S3 Bucket Name
+BASE_API_ROOT_URL = "https://atgk2xx0si.execute-api.ap-southeast-1.amazonaws.com/dev" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
+S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/" # Your S3 Bucket Name
 JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
 
 # Initialize session state variables
