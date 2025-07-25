@@ -72,7 +72,7 @@ if uploaded_file and api_url_for_request:
                     st.error(f"❌ Upload failed: {e}")
 
 # Auto-refresh every 15 seconds
-st_autorefresh = st.experimental_rerun if st.experimental_get_query_params().get("refresh") else st.experimental_set_query_params(refresh="1")
+st_autorefresh = st.experimental_rerun if st.query_params().get("refresh") else st.query_params(refresh="1")
 
 # Simulate fetching DynamoDB result from backend (replace with your actual API call or DB access)
 DUMMY_DYNAMO_ITEM = {
