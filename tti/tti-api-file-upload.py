@@ -17,8 +17,8 @@ st.markdown("""
 
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
 
-BASE_API_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev"
-S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/"
+BASE_API_URL = "https://1234.execute-api.ap-southeast-4.amazonaws.com/dev"
+S3_BUCKET_NAME = "ocr-ap-southeast-4/"
 
 with st.container():
     st.markdown('<div class="api-section">', unsafe_allow_html=True)
@@ -72,7 +72,7 @@ if uploaded_file and api_url_for_request:
                     st.error(f"❌ Upload failed: {e}")
 
 # Auto-refresh every 15 seconds
-st_autorefresh = st.experimental_rerun if st.query_params().get("refresh") else st.query_params(refresh="1")
+st_autorefresh = st.experimental_rerun if st.experimental_get_query_params().get("refresh") else st.experimental_set_query_params(refresh="1")
 
 # Simulate fetching DynamoDB result from backend (replace with your actual API call or DB access)
 DUMMY_DYNAMO_ITEM = {
