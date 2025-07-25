@@ -2,8 +2,7 @@ import streamlit as st
 import requests
 import time
 import os
-from datetime import datetime, timezone, timedelta
-import pytz
+import json # Import json
 
 st.set_page_config(page_title="API File Manager", page_icon="📁", layout="wide")
 
@@ -12,57 +11,108 @@ st.markdown("""
 .main-header { font-size: 2.5rem; color: #1f77b4; margin-bottom: 2rem; }
 .upload-section { background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
+
+/* Custom CSS to change the file size limit text */
+[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
+    display: none; /* Hide the original text */
+}
+[data-testid="stFileUploaderDropzoneInstructions"] > div::after {
+    content: 'Limit 10MB per file'; /* Add your custom text */
+    display: block; /* Make sure it's visible */
+    font-size: 0.9em; /* Adjust font size if needed */
+    color: #888; /* Adjust color if needed */
+    margin-top: 5px; /* Add some spacing if needed */
+}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
 
-BASE_API_URL = "https://1234.execute-api.ap-southeast-4.amazonaws.com/dev"
-S3_BUCKET_NAME = "ocr-ap-southeast-4/"
+# Define your base API URL here (for both upload and results)
+# IMPORTANT: Use the root of your API Gateway deployment, e.g., "https://1234.execute-api.ap-southeast-4.amazonaws.com/prod"
+# The /prod/upload and /prod/results paths will be appended.
+BASE_API_ROOT_URL = "https://1234.execute-api.ap-southeast-4.amazonaws.com/prod" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
+S3_BUCKET_NAME = "ocr-ap-southeast-4/" # Your S3 Bucket Name
+
+# Initialize session state variables
+if 'uploaded_document_id' not in st.session_state:
+    st.session_state.uploaded_document_id = None
+if 'analysis_results' not in st.session_state:
+    st.session_state.analysis_results = None
 
 with st.container():
     st.markdown('<div class="api-section">', unsafe_allow_html=True)
     st.subheader("🔗 API Configuration")
-    st.write(f"**Base API Endpoint:** `{BASE_API_URL}`")
+    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
     st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
-
+    
     st.markdown("---")
     st.markdown("##### S3 Folder Configuration")
-    user_folder_name = st.text_input("", placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')", label_visibility="collapsed")
+    user_folder_name = st.text_input(
+        "", 
+        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        label_visibility="collapsed",
+        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+    )
+    
     if user_folder_name and not user_folder_name.endswith('/'):
         user_folder_name += '/'
     elif not user_folder_name:
         user_folder_name = ""
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
-    uploaded_file = st.file_uploader("", label_visibility="collapsed", accept_multiple_files=False)
-    api_url_for_request = None
+    uploaded_file = st.file_uploader(
+        "", 
+        label_visibility="collapsed", 
+        accept_multiple_files=False
+    )
+    
+    api_upload_url = None
+    current_document_id = None # This will be the S3 object key
 
     if uploaded_file:
         st.success(f"✅ File selected: {uploaded_file.name} ({uploaded_file.size} bytes)")
+        
         filename = uploaded_file.name
-        base_api_root = BASE_API_URL.split('/ocr-ap-southeast-4/')[0] + '/'
-        if not base_api_root.endswith('/'):
-            base_api_root += '/'
-        api_url_for_request = f"{base_api_root}{S3_BUCKET_NAME}{user_folder_name}{filename}"
-        st.info(f"Generated API URL for request: `{api_url_for_request}`")
+        
+        # Construct the S3 object key
+        current_document_id = f"{user_folder_name}{filename}"
+        
+        # The API Gateway URL for PUT (upload) is specific
+        # It's usually BASE_API_ROOT_URL/prod/bucketname/folder/filename
+        # Assuming your API Gateway base path is BASE_API_ROOT_URL/prod/
+        # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
+        # Adjust this mapping based on your API Gateway's actual configuration
+        api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
+        
+        st.info(f"Generated API URL for upload: `{api_upload_url}`")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-if uploaded_file and api_url_for_request:
+# Main action buttons
+if uploaded_file and api_upload_url:
     col1, col2 = st.columns(2, gap="large")
+    
     with col1:
         if st.button("🚀 POST Upload", type="primary", use_container_width=True):
+            st.session_state.analysis_results = None # Clear previous results
+            st.session_state.uploaded_document_id = None # Clear previous document ID
             with st.spinner("Uploading..."):
-                files = {"file": uploaded_file}
+                files = {"file": uploaded_file} # API Gateway PUT integration requires 'file' as key for binary body
                 try:
-                    response = requests.put(api_url_for_request, files=files)
+                    # For API Gateway S3 Proxy, it's often a PUT request directly to the S3 path
+                    response = requests.put(api_upload_url, data=uploaded_file.getvalue())
+                    
                     if response.status_code == 200:
                         st.success(f"✅ Upload successful! Status: {response.status_code}")
+                        st.session_state.uploaded_document_id = current_document_id # Store the document ID
                     else:
-                        st.warning(f"⚠️ Status: {response.status_code}")
+                        st.warning(f"⚠️ Upload failed. Status: {response.status_code}")
+                    
                     with st.expander("📋 Response Details"):
                         try:
                             st.json(response.json())
@@ -71,73 +121,79 @@ if uploaded_file and api_url_for_request:
                 except Exception as e:
                     st.error(f"❌ Upload failed: {e}")
 
-# Auto-refresh every 15 seconds
-st_autorefresh = st.experimental_rerun if st.query_params().get("refresh") else st.experimental_set_query_params(refresh="1")
+# Section to retrieve and display results
+if st.session_state.uploaded_document_id:
+    st.markdown("---")
+    st.subheader("📊 Document Analysis Results")
+    
+    if st.button("🔄 Retrieve Analysis Results", use_container_width=True):
+        st.session_state.analysis_results = None # Clear previous
+        results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
+        st.info(f"Attempting to fetch results from: `{results_api_url}`")
+        
+        with st.spinner("Fetching and waiting for analysis results... (This may take a while for large documents)"):
+            max_retries = 20
+            retry_interval_seconds = 5
+            
+            for i in range(max_retries):
+                try:
+                    response = requests.get(results_api_url)
+                    
+                    if response.status_code == 200:
+                        st.success("✅ Results found!")
+                        st.session_state.analysis_results = response.json()
+                        break # Exit loop if successful
+                    elif response.status_code == 404:
+                        st.info(f"Analysis still in progress or not found. Retrying in {retry_interval_seconds} seconds... ({i+1}/{max_retries})")
+                        time.sleep(retry_interval_seconds)
+                    else:
+                        st.error(f"❌ Error fetching results: Status {response.status_code}")
+                        with st.expander("Response Details"):
+                            st.text(response.text)
+                        break # Exit loop on other errors
+                except Exception as e:
+                    st.error(f"❌ Network or API error: {e}")
+                    break # Exit loop on network error
+            else:
+                st.warning("⚠️ Max retries reached. Analysis might still be in progress or failed. Check Lambda/Step Functions logs.")
 
-# Simulate fetching DynamoDB result from backend (replace with your actual API call or DB access)
-DUMMY_DYNAMO_ITEM = {
-    "documentId": "Bungasari/5200656442&1900006496 BFM - AI K DEL 3 JUN (WHEAT FLOUR F05G 26,830 KG).pdf",
-    "classificationTimestamp": "1753414491112",
-    "classifiedData": "Invoice",
-    "structuredFields": {
-        "InvoiceNumber": "6000159659",
-        "TaxNo": "04002500166139662",
-        "PONo": "33188555",
-        "ItemName": ["Terigu F05 G Curah (BT)", "Terigu F05 G Curah (BT)"],
-        "UnitPrice": ["IDR 5,900.00", "IDR 5,900.00"],
-        "Quantity": ["26,810.000", "20.000"],
-        "DeleveryOrderNumber": ["3000233899", "3000234789"],
-        "DeleveryOrderDate": ["02.06.2025", "02.06.2025"]
-    }
-}
+    if st.session_state.analysis_results:
+        st.subheader("Extracted Data")
+        with st.expander("View Raw JSON Data"):
+            st.json(st.session_state.analysis_results)
 
-item = DUMMY_DYNAMO_ITEM
-if item and "structuredFields" in item:
-    fields = item["structuredFields"]
-    doc_id = item.get("documentId", "")
-    doc_type = item.get("classifiedData", "")
-    ts = item.get("classificationTimestamp")
-    dt_str = ""
-    if ts:
-        try:
-            timestamp = int(ts) / 1000
-            dt = datetime.fromtimestamp(timestamp, pytz.timezone("Asia/Jakarta"))
-            dt_str = dt.strftime("%d/%m/%Y %H:%M:%S")
-        except:
-            dt_str = "Invalid timestamp"
+        # Display Parsed Table Markdown
+        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        if parsed_tables:
+            st.markdown("---")
+            st.subheader("📊 Parsed Tables (Markdown)")
+            for i, table_md in enumerate(parsed_tables):
+                st.write(f"**Table {i+1}:**")
+                st.markdown(table_md) # Streamlit renders Markdown directly
+                st.markdown("---")
+        else:
+            st.info("No tables extracted or parsed for this document.")
 
-    st.markdown("""
-    <table>
-        <tr><td><b>classificationTimestamp:</b></td><td>{}</td></tr>
-        <tr><td><b>documentId:</b></td><td>{}</td></tr>
-        <tr><td><b>classifiedData:</b></td><td>{}</td></tr>
-        <tr><td><b>InvoiceNumber:</b></td><td>{}</td></tr>
-        <tr><td><b>PONo:</b></td><td>{}</td></tr>
-        <tr><td><b>TaxNo:</b></td><td>{}</td></tr>
-    </table>
-    <br>
-    """.format(
-        dt_str, doc_id, doc_type,
-        fields.get("InvoiceNumber", ""),
-        fields.get("PONo", ""),
-        fields.get("TaxNo", "")
-    ), unsafe_allow_html=True)
+        # Display Queries
+        queries = st.session_state.analysis_results.get('Queries', {})
+        if queries:
+            st.markdown("---")
+            st.subheader("🔍 Query Results")
+            for alias, answer in queries.items():
+                st.write(f"**{alias}:** {answer}")
+        else:
+            st.info("No queries found for this document.")
 
-    # Table header
-    md = "| <span style='color:#3c763d'><b>ItemName</b></span> | <b>Quantity</b> | <b>UnitPrice</b> | <b>DeleveryOrderNumber</b> | <b>DeleveryOrderDate</b> |\n"
-    md += "|--------------------|----------|------------|----------------------|--------------------|\n"
+        # Display Classified Data
+        classified_data = st.session_state.analysis_results.get('classifiedData')
+        if classified_data:
+            st.markdown("---")
+            st.subheader("🧠 Document Classification")
+            st.success(f"**Category:** {classified_data}")
+        else:
+            st.info("Document not yet classified or classification data not found.")
 
-    item_names = fields.get("ItemName", [])
-    qtys = fields.get("Quantity", [])
-    prices = fields.get("UnitPrice", [])
-    donos = fields.get("DeleveryOrderNumber", [])
-    dodates = fields.get("DeleveryOrderDate", [])
-
-    row_count = max(len(item_names), len(qtys), len(prices), len(donos), len(dodates))
-
-    for i in range(row_count):
-        md += f"| {item_names[i] if i < len(item_names) else ''} | {qtys[i] if i < len(qtys) else ''} | {prices[i] if i < len(prices) else ''} | {donos[i] if i < len(donos) else ''} | {dodates[i] if i < len(dodates) else ''} |\n"
-
-    st.markdown(md, unsafe_allow_html=True)
-
-st.markdown("<br><sub style='color:#aaa;'>🔄 Auto-refresh enabled every 15s</sub>", unsafe_allow_html=True)
+if not uploaded_file:
+    st.info("💡 Please select a file to upload")
+elif not user_folder_name:
+    st.info("💡 Please enter an S3 folder name.")
