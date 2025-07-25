@@ -33,8 +33,8 @@ st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_h
 # Define your base API URL here (for both upload and results)
 # IMPORTANT: Use the root of your API Gateway deployment, e.g., "https://1234.execute-api.ap-southeast-4.amazonaws.com/prod"
 # The /prod/upload and /prod/results paths will be appended.
-BASE_API_ROOT_URL = "https://atgk2xx0si.execute-api.ap-southeast-1.amazonaws.com/dev" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
-S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/" # Your S3 Bucket Name
+BASE_API_ROOT_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
+S3_BUCKET_NAME = "ocr-ap-southeast-4/" # Your S3 Bucket Name
 JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
 
 # Initialize session state variables
@@ -48,9 +48,14 @@ if 'last_refresh_time' not in st.session_state:
 # Function to format timestamp
 def format_timestamp(ms_timestamp):
     if ms_timestamp:
-        dt_utc = datetime.fromtimestamp(ms_timestamp / 1000, tz=pytz.utc)
-        dt_jakarta = dt_utc.astimezone(JAKARTA_TZ)
-        return dt_jakarta.strftime("%d/%m/%Y %H:%M:%S")
+        try:
+            # Convert string timestamp to float before division
+            dt_utc = datetime.fromtimestamp(float(ms_timestamp) / 1000, tz=pytz.utc)
+            dt_jakarta = dt_utc.astimezone(JAKARTA_TZ)
+            return dt_jakarta.strftime("%d/%m/%Y %H:%M:%S")
+        except (ValueError, TypeError) as e:
+            st.error(f"Error converting timestamp '{ms_timestamp}': {e}")
+            return "Invalid Timestamp"
     return "N/A"
 
 with st.container():
@@ -99,7 +104,6 @@ with st.container():
         # It's usually BASE_API_ROOT_URL/prod/bucketname/folder/filename
         # Assuming your API Gateway base path is BASE_API_ROOT_URL/prod/
         # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
-        # Adjust this mapping based on your API Gateway's actual configuration
         api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
         
         st.info(f"Generated API URL for upload: `{api_upload_url}`")
@@ -196,43 +200,51 @@ if st.session_state.uploaded_document_id:
             st.markdown("---")
             st.subheader("📋 Structured Fields")
             
-            # Prepare data for Streamlit table, transposing if necessary
-            # The image shows "ItemName", "Quantity", "UnitPrice", "DeleveryOrderNumber", "DeleveryOrderDate"
-            # as columns, with lists of values. We need to create rows from these lists.
-            
-            # Find all keys that are lists and determine max length
-            list_keys = [k for k, v in structured_fields.items() if isinstance(v, list)]
-            max_rows = 0
-            if list_keys:
-                max_rows = max(len(structured_fields[k]) for k in list_keys)
-            
-            # Create a list of dictionaries for st.dataframe
-            table_data_for_dataframe = []
-            for i in range(max_rows):
-                row = {}
-                for key in list_keys:
-                    # Get value at current index, or None/empty string if index out of bounds
-                    row[key] = structured_fields[key][i] if i < len(structured_fields[key]) else ""
-                table_data_for_dataframe.append(row)
-            
-            # Display non-list fields above the table if they exist
-            non_list_fields = {k: v for k, v in structured_fields.items() if not isinstance(v, list)}
-            if non_list_fields:
+            # Prepare data for Streamlit table
+            # Separate scalar fields from list fields
+            scalar_fields = {k: v for k, v in structured_fields.items() if not isinstance(v, list)}
+            list_fields_data = {k: v for k, v in structured_fields.items() if isinstance(v, list)}
+
+            # Display scalar fields in two columns
+            if scalar_fields:
                 st.write("**Header Fields:**")
-                for key, value in non_list_fields.items():
-                    st.write(f"- **{key}:** {value}")
+                scalar_cols = st.columns(min(len(scalar_fields), 2)) # Up to 2 columns for scalars
+                col_idx = 0
+                for key, value in scalar_fields.items():
+                    with scalar_cols[col_idx]:
+                        st.write(f"**{key}:** {value}")
+                    col_idx = (col_idx + 1) % len(scalar_cols) # Cycle through columns
                 st.markdown("---") # Separator before the main table
 
-            if table_data_for_dataframe:
+            # Display list fields as a dataframe (table-like)
+            if list_fields_data:
                 st.write("**Item Details:**")
-                st.dataframe(table_data_for_dataframe, use_container_width=True)
+                
+                # Determine the maximum number of rows among all lists
+                max_rows = 0
+                if list_fields_data:
+                    max_rows = max(len(v) for v in list_fields_data.values())
+
+                # Create a list of dictionaries for st.dataframe
+                table_data_for_dataframe = []
+                for i in range(max_rows):
+                    row = {}
+                    for key, values in list_fields_data.items():
+                        # Get value at current index, or None/empty string if index out of bounds
+                        row[key] = values[i] if i < len(values) else ""
+                    table_data_for_dataframe.append(row)
+                
+                if table_data_for_dataframe:
+                    st.dataframe(table_data_for_dataframe, use_container_width=True)
+                else:
+                    st.info("No structured item details found for this document.")
             else:
                 st.info("No structured item details found for this document.")
 
         else:
             st.info("No structured fields found for this document.")
 
-        # Display Parsed Table Markdown
+        # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
         parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
         if parsed_tables:
             st.markdown("---")
@@ -244,7 +256,7 @@ if st.session_state.uploaded_document_id:
         else:
             st.info("No generic tables extracted or parsed for this document.")
 
-        # Display Queries
+        # Display Queries (will show "No queries found" as expected)
         queries = st.session_state.analysis_results.get('Queries', {})
         if queries:
             st.markdown("---")
@@ -253,17 +265,3 @@ if st.session_state.uploaded_document_id:
                 st.write(f"- **{alias}:** {answer}")
         else:
             st.info("No queries found for this document.")
-
-        # Display Classified Data (already at the top, but keeping this check here too)
-        # classified_data = st.session_state.analysis_results.get('classifiedData')
-        # if classified_data:
-        #     st.markdown("---")
-        #     st.subheader("🧠 Document Classification")
-        #     st.success(f"**Category:** {classified_data}")
-        # else:
-        #     st.info("Document not yet classified or classification data not found.")
-
-if not uploaded_file:
-    st.info("💡 Please select a file to upload")
-elif not user_folder_name:
-    st.info("💡 Please enter an S3 folder name.")
