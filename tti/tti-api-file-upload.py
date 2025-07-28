@@ -106,7 +106,7 @@ with st.container():
         # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
         api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
         
-        st.info(f"Generated API URL for upload: `{api_upload_url}`")
+        # st.info(f"Generated API URL for upload: `{api_upload_url}`")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
