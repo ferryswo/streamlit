@@ -59,18 +59,18 @@ def format_timestamp(ms_timestamp):
     return "N/A"
 
 with st.container():
-    st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    st.subheader("🔗 API Configuration")
-    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    # st.subheader("🔗 API Configuration")
+    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
     st.markdown("---")
-    st.markdown("##### S3 Folder Configuration")
+    st.markdown("##### Customer Name")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        placeholder="Enter the S3 folder name (e.g., 'Bungasari', 'Haldin')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     
     if user_folder_name and not user_folder_name.endswith('/'):
@@ -191,8 +191,8 @@ if st.session_state.uploaded_document_id:
 
 
         st.subheader("Extracted Data Details")
-        with st.expander("View Raw JSON Data"):
-            st.json(st.session_state.analysis_results)
+        # with st.expander("View Raw JSON Data"):
+        #     st.json(st.session_state.analysis_results)
 
         # Display Structured Fields as a table
         structured_fields = st.session_state.analysis_results.get('structuredFields', {})
@@ -245,23 +245,23 @@ if st.session_state.uploaded_document_id:
             st.info("No structured fields found for this document.")
 
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
-        if parsed_tables:
-            st.markdown("---")
-            st.subheader("📊 Parsed Tables (Markdown)")
-            for i, table_md in enumerate(parsed_tables):
-                st.write(f"**Table {i+1}:**")
-                st.markdown(table_md) # Streamlit renders Markdown directly
-                st.markdown("---")
-        else:
-            st.info("No generic tables extracted or parsed for this document.")
+        # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        # if parsed_tables:
+        #     st.markdown("---")
+        #     st.subheader("📊 Parsed Tables (Markdown)")
+        #     for i, table_md in enumerate(parsed_tables):
+        #         st.write(f"**Table {i+1}:**")
+        #         st.markdown(table_md) # Streamlit renders Markdown directly
+        #         st.markdown("---")
+        # else:
+        #     st.info("No generic tables extracted or parsed for this document.")
 
         # Display Queries (will show "No queries found" as expected)
-        queries = st.session_state.analysis_results.get('Queries', {})
-        if queries:
-            st.markdown("---")
-            st.subheader("🔍 Query Results")
-            for alias, answer in queries.items():
-                st.write(f"- **{alias}:** {answer}")
-        else:
-            st.info("No queries found for this document.")
+        # queries = st.session_state.analysis_results.get('Queries', {})
+        # if queries:
+        #     st.markdown("---")
+        #     st.subheader("🔍 Query Results")
+        #     for alias, answer in queries.items():
+        #         st.write(f"- **{alias}:** {answer}")
+        # else:
+        #     st.info("No queries found for this document.")
