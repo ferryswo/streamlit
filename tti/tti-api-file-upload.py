@@ -144,7 +144,7 @@ if st.session_state.uploaded_document_id:
     st.subheader("📊 Document Analysis Results")
     
     # Auto-refresh logic
-    refresh_interval_seconds = 10 # Refresh every 10 seconds
+    refresh_interval_seconds = 60 # Refresh every 10 seconds
     if (time.time() - st.session_state.last_refresh_time) > refresh_interval_seconds:
         st.session_state.last_refresh_time = time.time() # Update last refresh time
         st.rerun() # Trigger a rerun to re-fetch data
@@ -190,15 +190,15 @@ if st.session_state.uploaded_document_id:
             st.write(f"**Classified At (Jkt):** {format_timestamp(timestamp_ms)}")
 
 
-        st.subheader("Extracted Data Details")
+        # st.subheader("Extracted Data Details")
         # with st.expander("View Raw JSON Data"):
         #     st.json(st.session_state.analysis_results)
 
         # Display Structured Fields as a table
         structured_fields = st.session_state.analysis_results.get('structuredFields', {})
         if structured_fields:
-            st.markdown("---")
-            st.subheader("📋 Structured Fields")
+            # st.markdown("---")
+            # st.subheader("📋 Structured Fields")
             
             # Prepare data for Streamlit table
             # Separate scalar fields from list fields
@@ -207,7 +207,7 @@ if st.session_state.uploaded_document_id:
 
             # Display scalar fields in two columns
             if scalar_fields:
-                st.write("**Header Fields:**")
+                # st.write("**Header Fields:**")
                 scalar_cols = st.columns(min(len(scalar_fields), 2)) # Up to 2 columns for scalars
                 col_idx = 0
                 for key, value in scalar_fields.items():
