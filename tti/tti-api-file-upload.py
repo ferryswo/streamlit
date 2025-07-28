@@ -44,8 +44,6 @@ if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
 if 'last_refresh_time' not in st.session_state:
     st.session_state.last_refresh_time = time.time() # Track last refresh for auto-refresh
-if 'fetch_retries_count' not in st.session_state:
-    st.session_state.fetch_retries_count = 0
 
 # Function to format timestamp
 def format_timestamp(ms_timestamp):
@@ -85,21 +83,11 @@ with st.container():
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
-    
-    # --- MODIFICATION START ---
-    # Disable file uploader if user_folder_name is empty
-    file_uploader_disabled = not bool(user_folder_name) 
-    
-    if file_uploader_disabled:
-        st.info("💡 Please enter an S3 folder name above to enable file upload.")
-
     uploaded_file = st.file_uploader(
         "", 
         label_visibility="collapsed", 
-        accept_multiple_files=False,
-        disabled=file_uploader_disabled # This is the key line
+        accept_multiple_files=False
     )
-    # --- MODIFICATION END ---
     
     api_upload_url = None
     current_document_id = None # This will be the S3 object key
@@ -131,7 +119,6 @@ if uploaded_file and api_upload_url:
             st.session_state.analysis_results = None # Clear previous results
             st.session_state.uploaded_document_id = None # Clear previous document ID
             st.session_state.last_refresh_time = time.time() # Reset refresh timer on new upload
-            st.session_state.fetch_retries_count = 0 # Reset fetch retries
             with st.spinner("Uploading..."):
                 try:
                     # For API Gateway S3 Proxy, it's often a PUT request directly to the S3 path
@@ -157,60 +144,38 @@ if st.session_state.uploaded_document_id:
     st.subheader("📊 Document Analysis Results")
     
     # Auto-refresh logic
-    # This interval determines how often the Streamlit script re-runs automatically
-    main_refresh_interval_seconds = 10 
-    if (time.time() - st.session_state.last_refresh_time) > main_refresh_interval_seconds:
+    refresh_interval_seconds = 10 # Refresh every 10 seconds
+    if (time.time() - st.session_state.last_refresh_time) > refresh_interval_seconds:
         st.session_state.last_refresh_time = time.time() # Update last refresh time
         st.rerun() # Trigger a rerun to re-fetch data
 
     if st.button("🔄 Retrieve Analysis Results Now", use_container_width=True):
         st.session_state.analysis_results = None # Clear previous
         st.session_state.last_refresh_time = time.time() # Reset timer for manual refresh
-        st.session_state.fetch_retries_count = 0 # Reset fetch retries for manual fetch
         # The fetching logic below will run
-
-    # Parameters for fetching retries within a single streamlit rerun
-    max_fetch_retries = 20 # Maximum attempts to fetch results if 404
-    fetch_retry_interval_seconds = 7 # Time to wait between fetch retries (if 404)
     
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
-    # Only fetch if results are not already present
+    # Only fetch if results are not already present or if explicitly asked to refresh
     if st.session_state.analysis_results is None:
         st.info(f"Attempting to fetch results from: `{results_api_url}`")
-        fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
-
-        with fetch_placeholder.container(): # Use container to clear previous messages
-            with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
-                while st.session_state.fetch_retries_count < max_fetch_retries:
-                    try:
-                        response = requests.get(results_api_url)
-                        
-                        if response.status_code == 200:
-                            st.success("✅ Results found!")
-                            st.session_state.analysis_results = response.json()
-                            st.session_state.fetch_retries_count = 0 # Reset on success
-                            fetch_placeholder.empty() # Clear the spinner/messages
-                            break # Exit the while loop
-                        elif response.status_code == 404:
-                            st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
-                            st.session_state.fetch_retries_count += 1
-                            time.sleep(fetch_retry_interval_seconds) # Wait before retrying
-                            if st.session_state.fetch_retries_count >= max_fetch_retries:
-                                st.warning("⚠️ Max retries reached. Analysis might still be in progress or failed. Check Lambda/Step Functions logs or try manual refresh.")
-                        else:
-                            st.error(f"❌ Error fetching results: Status {response.status_code}")
-                            with st.expander("Response Details"):
-                                st.text(response.text)
-                            st.session_state.fetch_retries_count = 0 # Reset on other error
-                            fetch_placeholder.empty() # Clear the spinner/messages
-                            break # Exit loop on other errors
-                    except Exception as e:
-                        st.error(f"❌ Network or API error during fetch: {e}")
-                        st.session_state.fetch_retries_count = 0 # Reset on network error
-                        fetch_placeholder.empty() # Clear the spinner/messages
-                        break # Exit loop on network error
+        with st.spinner("Fetching and waiting for analysis results... (This may take a while for large documents)"):
+            try:
+                response = requests.get(results_api_url)
                 
+                if response.status_code == 200:
+                    st.success("✅ Results found!")
+                    st.session_state.analysis_results = response.json()
+                elif response.status_code == 404:
+                    st.info("Analysis still in progress or not found. Waiting for results...")
+                    # No time.sleep here, relying on auto-refresh or manual button
+                else:
+                    st.error(f"❌ Error fetching results: Status {response.status_code}")
+                    with st.expander("Response Details"):
+                        st.text(response.text)
+            except Exception as e:
+                st.error(f"❌ Network or API error: {e}")
+    
     if st.session_state.analysis_results:
         # Display general document info
         st.markdown("---")
