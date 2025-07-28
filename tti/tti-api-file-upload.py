@@ -72,7 +72,7 @@ with st.container():
         "", 
         placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
     )
     
     if user_folder_name and not user_folder_name.endswith('/'):
@@ -85,11 +85,21 @@ with st.container():
 with st.container():
     st.markdown('<div class="upload-section">', unsafe_allow_html=True)
     st.subheader("📤 File Upload")
+    
+    # --- MODIFICATION START ---
+    # Disable file uploader if user_folder_name is empty
+    file_uploader_disabled = not bool(user_folder_name) 
+    
+    if file_uploader_disabled:
+        st.info("💡 Please enter an S3 folder name above to enable file upload.")
+
     uploaded_file = st.file_uploader(
         "", 
         label_visibility="collapsed", 
-        accept_multiple_files=False
+        accept_multiple_files=False,
+        disabled=file_uploader_disabled # This is the key line
     )
+    # --- MODIFICATION END ---
     
     api_upload_url = None
     current_document_id = None # This will be the S3 object key
@@ -161,7 +171,7 @@ if st.session_state.uploaded_document_id:
 
     # Parameters for fetching retries within a single streamlit rerun
     max_fetch_retries = 20 # Maximum attempts to fetch results if 404
-    fetch_retry_interval_seconds = 5 # Time to wait between fetch retries (if 404)
+    fetch_retry_interval_seconds = 7 # Time to wait between fetch retries (if 404)
     
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
