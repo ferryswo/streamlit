@@ -137,12 +137,6 @@ if uploaded_file and api_upload_url: # These conditions prevent buttons from sho
                     if response.status_code == 200:
                         st.success(f"✅ Upload successful! Status: {response.status_code}")
                         st.session_state.uploaded_document_id = current_document_id # Store the document ID
-                        
-                        # --- NEW: Wait 15 seconds after successful upload ---
-                        # st.info("Waiting 15 seconds for backend processing to initiate...")
-                        time.sleep(15) 
-                        # st.info("Wait complete. Attempting to fetch results...")
-                        # --- END NEW ---
 
                     else:
                         st.warning(f"⚠️ Upload failed. Status: {response.status_code}")
@@ -179,11 +173,12 @@ if st.session_state.uploaded_document_id:
     
     # Only fetch if results are not already present
     if st.session_state.analysis_results is None:
-        st.info(f"Attempting to fetch results...`")
+        time.sleep(15) 
+        # st.info(f"Attempting to fetch results...")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
         with fetch_placeholder.container(): # Use container to clear previous messages
-            with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
+            with st.spinner(f"Fetching and waiting for analysis results..."):
                 while st.session_state.fetch_retries_count < max_fetch_retries:
                     try:
                         response = requests.get(results_api_url)
