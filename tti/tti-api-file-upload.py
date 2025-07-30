@@ -61,12 +61,12 @@ def format_timestamp(ms_timestamp):
     return "N/A"
 
 with st.container():
-    st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    st.subheader("🔗 API Configuration")
+    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    # st.subheader("🔗 API Configuration")
     # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
     # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
-    st.markdown("---")
+    # st.markdown("---")
     st.markdown("##### Customer Name")
     user_folder_name = st.text_input(
         "", 
