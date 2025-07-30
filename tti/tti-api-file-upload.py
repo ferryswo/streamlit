@@ -63,8 +63,8 @@ def format_timestamp(ms_timestamp):
 with st.container():
     st.markdown('<div class="api-section">', unsafe_allow_html=True)
     st.subheader("🔗 API Configuration")
-    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
     st.markdown("---")
     st.markdown("##### Customer Name")
@@ -117,7 +117,7 @@ with st.container():
             # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
             api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
             
-            st.info(f"Generated API URL for upload: `{api_upload_url}`")
+            # st.info(f"Generated API URL for upload: `{api_upload_url}`")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -175,40 +175,40 @@ if st.session_state.uploaded_document_id:
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
     # Only fetch if results are not already present
-    if st.session_state.analysis_results is None:
-        st.info(f"Attempting to fetch results from: `{results_api_url}`")
-        fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
+    # if st.session_state.analysis_results is None:
+    #     st.info(f"Attempting to fetch results from: `{results_api_url}`")
+    #     fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
-        with fetch_placeholder.container(): # Use container to clear previous messages
-            with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
-                while st.session_state.fetch_retries_count < max_fetch_retries:
-                    try:
-                        response = requests.get(results_api_url)
+    #     with fetch_placeholder.container(): # Use container to clear previous messages
+    #         with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
+    #             while st.session_state.fetch_retries_count < max_fetch_retries:
+    #                 try:
+    #                     response = requests.get(results_api_url)
                         
-                        if response.status_code == 200:
-                            st.success("✅ Results found!")
-                            st.session_state.analysis_results = response.json()
-                            st.session_state.fetch_retries_count = 0 # Reset on success
-                            fetch_placeholder.empty() # Clear the spinner/messages
-                            break # Exit the while loop
-                        elif response.status_code == 404:
-                            st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
-                            st.session_state.fetch_retries_count += 1
-                            time.sleep(fetch_retry_interval_seconds) # Wait before retrying
-                            if st.session_state.fetch_retries_count >= max_fetch_retries:
-                                st.warning("⚠️ Max retries reached. Analysis might still be in progress or failed. Check Lambda/Step Functions logs or try manual refresh.")
-                        else:
-                            st.error(f"❌ Error fetching results: Status {response.status_code}")
-                            with st.expander("Response Details"):
-                                st.text(response.text)
-                            st.session_state.fetch_retries_count = 0 # Reset on other error
-                            fetch_placeholder.empty() # Clear the spinner/messages
-                            break # Exit loop on other errors
-                    except Exception as e:
-                        st.error(f"❌ Network or API error during fetch: {e}")
-                        st.session_state.fetch_retries_count = 0 # Reset on network error
-                        fetch_placeholder.empty() # Clear the spinner/messages
-                        break # Exit loop on network error
+    #                     if response.status_code == 200:
+    #                         st.success("✅ Results found!")
+    #                         st.session_state.analysis_results = response.json()
+    #                         st.session_state.fetch_retries_count = 0 # Reset on success
+    #                         fetch_placeholder.empty() # Clear the spinner/messages
+    #                         break # Exit the while loop
+    #                     elif response.status_code == 404:
+    #                         st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
+    #                         st.session_state.fetch_retries_count += 1
+    #                         time.sleep(fetch_retry_interval_seconds) # Wait before retrying
+    #                         if st.session_state.fetch_retries_count >= max_fetch_retries:
+    #                             st.warning("⚠️ Max retries reached. Analysis might still be in progress or failed. Check Lambda/Step Functions logs or try manual refresh.")
+    #                     else:
+    #                         st.error(f"❌ Error fetching results: Status {response.status_code}")
+    #                         with st.expander("Response Details"):
+    #                             st.text(response.text)
+    #                         st.session_state.fetch_retries_count = 0 # Reset on other error
+    #                         fetch_placeholder.empty() # Clear the spinner/messages
+    #                         break # Exit loop on other errors
+    #                 except Exception as e:
+    #                     st.error(f"❌ Network or API error during fetch: {e}")
+    #                     st.session_state.fetch_retries_count = 0 # Reset on network error
+    #                     fetch_placeholder.empty() # Clear the spinner/messages
+    #                     break # Exit loop on network error
                 
     if st.session_state.analysis_results:
         # Display general document info
@@ -279,23 +279,23 @@ if st.session_state.uploaded_document_id:
             st.info("No structured fields found for this document.")
 
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
-        if parsed_tables:
-            st.markdown("---")
-            st.subheader("📊 Parsed Tables (Markdown)")
-            for i, table_md in enumerate(parsed_tables):
-                st.write(f"**Table {i+1}:**")
-                st.markdown(table_md) # Streamlit renders Markdown directly
-                st.markdown("---")
-        else:
-            st.info("No generic tables extracted or parsed for this document.")
+        # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        # if parsed_tables:
+        #     st.markdown("---")
+        #     st.subheader("📊 Parsed Tables (Markdown)")
+        #     for i, table_md in enumerate(parsed_tables):
+        #         st.write(f"**Table {i+1}:**")
+        #         st.markdown(table_md) # Streamlit renders Markdown directly
+        #         st.markdown("---")
+        # else:
+        #     st.info("No generic tables extracted or parsed for this document.")
 
-        # Display Queries (will show "No queries found" as expected)
-        queries = st.session_state.analysis_results.get('Queries', {})
-        if queries:
-            st.markdown("---")
-            st.subheader("🔍 Query Results")
-            for alias, answer in queries.items():
-                st.write(f"- **{alias}:** {answer}")
-        else:
-            st.info("No queries found for this document.")
+        # # Display Queries (will show "No queries found" as expected)
+        # queries = st.session_state.analysis_results.get('Queries', {})
+        # if queries:
+        #     st.markdown("---")
+        #     st.subheader("🔍 Query Results")
+        #     for alias, answer in queries.items():
+        #         st.write(f"- **{alias}:** {answer}")
+        # else:
+        #     st.info("No queries found for this document.")
