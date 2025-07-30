@@ -5,6 +5,7 @@ import os
 import json
 from datetime import datetime
 import pytz # For timezone conversion
+import pandas as pd # Import pandas for DataFrame operations
 
 st.set_page_config(page_title="API File Manager", page_icon="📁", layout="wide")
 
@@ -42,8 +43,6 @@ if 'uploaded_document_id' not in st.session_state:
     st.session_state.uploaded_document_id = None
 if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
-if 'last_refresh_time' not in st.session_state:
-    st.session_state.last_refresh_time = time.time() # Track last refresh for auto-refresh
 if 'fetch_retries_count' not in st.session_state:
     st.session_state.fetch_retries_count = 0
 
@@ -56,23 +55,23 @@ def format_timestamp(ms_timestamp):
             dt_jakarta = dt_utc.astimezone(JAKARTA_TZ)
             return dt_jakarta.strftime("%d/%m/%Y %H:%M:%S")
         except (ValueError, TypeError) as e:
-            st.error(f"Error converting timestamp '{ms_timestamp}': {e}")
+            # st.error(f"Error converting timestamp '{ms_timestamp}': {e}") # Removed for cleaner UI
             return "Invalid Timestamp"
     return "N/A"
 
 with st.container():
-    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    # st.subheader("🔗 API Configuration")
-    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    st.subheader("🔗 API Configuration")
+    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
-    # st.markdown("---")
-    st.markdown("##### Customer Name")
+    st.markdown("---")
+    st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the Customer name (e.g., 'Bungasari', 'Haldin')",
+        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
     )
     
     # Ensure user_folder_name has a trailing slash if not empty
@@ -117,7 +116,7 @@ with st.container():
             # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
             api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
             
-            # st.info(f"Generated API URL for upload: `{api_upload_url}`")
+            st.info(f"Generated API URL for upload: `{api_upload_url}`")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -129,7 +128,6 @@ if uploaded_file and api_upload_url: # These conditions prevent buttons from sho
         if st.button("🚀 POST Upload", type="primary", use_container_width=True):
             st.session_state.analysis_results = None # Clear previous results
             st.session_state.uploaded_document_id = None # Clear previous document ID
-            st.session_state.last_refresh_time = time.time() # Reset refresh timer on new upload
             st.session_state.fetch_retries_count = 0 # Reset fetch retries
             with st.spinner("Uploading..."):
                 try:
@@ -155,16 +153,14 @@ if st.session_state.uploaded_document_id:
     st.markdown("---")
     st.subheader("📊 Document Analysis Results")
     
-    # Auto-refresh logic
-    # This interval determines how often the Streamlit script re-runs automatically
-    main_refresh_interval_seconds = 10 
-    if (time.time() - st.session_state.last_refresh_time) > main_refresh_interval_seconds:
-        st.session_state.last_refresh_time = time.time() # Update last refresh time
-        st.rerun() # Trigger a rerun to re-fetch data
+    # --- DISABLED AUTO-REFRESH ---
+    # main_refresh_interval_seconds = 10 
+    # if (time.time() - st.session_state.last_refresh_time) > main_refresh_interval_seconds:
+    #     st.session_state.last_refresh_time = time.time() 
+    #     st.rerun() 
 
     if st.button("🔄 Retrieve Analysis Results Now", use_container_width=True):
         st.session_state.analysis_results = None # Clear previous
-        st.session_state.last_refresh_time = time.time() # Reset timer for manual refresh
         st.session_state.fetch_retries_count = 0 # Reset fetch retries for manual fetch
         # The fetching logic below will run
 
@@ -175,127 +171,141 @@ if st.session_state.uploaded_document_id:
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
     # Only fetch if results are not already present
-    # if st.session_state.analysis_results is None:
-    #     st.info(f"Attempting to fetch results from: `{results_api_url}`")
-    #     fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
+    if st.session_state.analysis_results is None:
+        st.info(f"Attempting to fetch results from: `{results_api_url}`")
+        fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
-    #     with fetch_placeholder.container(): # Use container to clear previous messages
-    #         with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
-    #             while st.session_state.fetch_retries_count < max_fetch_retries:
-    #                 try:
-    #                     response = requests.get(results_api_url)
+        with fetch_placeholder.container(): # Use container to clear previous messages
+            with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
+                while st.session_state.fetch_retries_count < max_fetch_retries:
+                    try:
+                        response = requests.get(results_api_url)
                         
-    #                     if response.status_code == 200:
-    #                         st.success("✅ Results found!")
-    #                         st.session_state.analysis_results = response.json()
-    #                         st.session_state.fetch_retries_count = 0 # Reset on success
-    #                         fetch_placeholder.empty() # Clear the spinner/messages
-    #                         break # Exit the while loop
-    #                     elif response.status_code == 404:
-    #                         st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
-    #                         st.session_state.fetch_retries_count += 1
-    #                         time.sleep(fetch_retry_interval_seconds) # Wait before retrying
-    #                         if st.session_state.fetch_retries_count >= max_fetch_retries:
-    #                             st.warning("⚠️ Max retries reached. Analysis might still be in progress or failed. Check Lambda/Step Functions logs or try manual refresh.")
-    #                     else:
-    #                         st.error(f"❌ Error fetching results: Status {response.status_code}")
-    #                         with st.expander("Response Details"):
-    #                             st.text(response.text)
-    #                         st.session_state.fetch_retries_count = 0 # Reset on other error
-    #                         fetch_placeholder.empty() # Clear the spinner/messages
-    #                         break # Exit loop on other errors
-    #                 except Exception as e:
-    #                     st.error(f"❌ Network or API error during fetch: {e}")
-    #                     st.session_state.fetch_retries_count = 0 # Reset on network error
-    #                     fetch_placeholder.empty() # Clear the spinner/messages
-    #                     break # Exit loop on network error
+                        if response.status_code == 200:
+                            st.success("✅ Results found!")
+                            st.session_state.analysis_results = response.json()
+                            st.session_state.fetch_retries_count = 0 # Reset on success
+                            fetch_placeholder.empty() # Clear the spinner/messages
+                            break # Exit the while loop
+                        elif response.status_code == 404:
+                            st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
+                            st.session_state.fetch_retries_count += 1
+                            time.sleep(fetch_retry_interval_seconds) # Wait before retrying
+                            if st.session_state.fetch_retries_count >= max_fetch_retries:
+                                st.warning("⚠️ Max retries reached. Analysis might still be in progress or failed. Check Lambda/Step Functions logs or try manual refresh.")
+                        else:
+                            st.error(f"❌ Error fetching results: Status {response.status_code}")
+                            with st.expander("Response Details"):
+                                st.text(response.text)
+                            st.session_state.fetch_retries_count = 0 # Reset on other error
+                            fetch_placeholder.empty() # Clear the spinner/messages
+                            break # Exit loop on other errors
+                    except Exception as e:
+                        st.error(f"❌ Network or API error during fetch: {e}")
+                        st.session_state.fetch_retries_count = 0 # Reset on network error
+                        fetch_placeholder.empty() # Clear the spinner/messages
+                        break # Exit loop on network error
                 
     if st.session_state.analysis_results:
-        # Display general document info
-        st.markdown("---")
-        st.subheader("📄 Document Information")
-        doc_info_cols = st.columns(3)
-        with doc_info_cols[0]:
-            st.write(f"**Document ID:** {st.session_state.analysis_results.get('documentId', 'N/A')}")
-        with doc_info_cols[1]:
-            st.write(f"**Classification:** {st.session_state.analysis_results.get('classifiedData', 'N/A')}")
-        with doc_info_cols[2]:
-            timestamp_ms = st.session_state.analysis_results.get('classificationTimestamp')
-            st.write(f"**Classified At (Jkt):** {format_timestamp(timestamp_ms)}")
+        # Prepare header fields for the combined table
+        doc_id = st.session_state.analysis_results.get('documentId', 'N/A')
+        classification = st.session_state.analysis_results.get('classifiedData', 'N/A')
+        timestamp_ms = st.session_state.analysis_results.get('classificationTimestamp')
+        classified_at = format_timestamp(timestamp_ms)
 
+        structured_fields = st.session_state.analysis_results.get('structuredFields', {})
+        
+        invoice_no = structured_fields.get('InvoiceNumber', 'N/A')
+        po_no = structured_fields.get('PONo', 'N/A')
+        tax_no = structured_fields.get('TaxNo', 'N/A')
 
-        st.subheader("Extracted Data Details")
+        # Get item details (list fields)
+        list_fields_data = {k: v for k, v in structured_fields.items() if isinstance(v, list)}
+
+        # Determine the maximum number of rows among all lists
+        max_rows = 1 # At least one row for header info if no item details
+        if list_fields_data:
+            max_rows = max(len(v) for v in list_fields_data.values())
+            if max_rows == 0: # If lists are empty, still show one row for header
+                max_rows = 1
+
+        # Create a list of dictionaries for the combined dataframe
+        combined_table_data = []
+        for i in range(max_rows):
+            row = {}
+            # Add header fields to each row
+            row["Document ID"] = doc_id
+            row["Classification"] = classification
+            row["Classified At"] = classified_at
+            row["Invoice Number"] = invoice_no
+            row["PO Number"] = po_no
+            row["Tax Number"] = tax_no
+
+            # Add item details for current row
+            for key, values in list_fields_data.items():
+                row[key] = values[i] if i < len(values) else ""
+            combined_table_data.append(row)
+        
+        if combined_table_data:
+            st.markdown("---")
+            st.subheader("📋 Consolidated Document Data")
+            
+            # Create DataFrame
+            df = pd.DataFrame(combined_table_data)
+            
+            # Reorder columns to match the desired output visually
+            # Ensure all expected columns are present, even if empty
+            desired_columns_order = [
+                "Document ID", "Classification", "Classified At",
+                "Invoice Number", "PO Number", "Tax Number",
+                "ItemName", "Quantity", "UnitPrice", "DeleveryOrderNumber", "DeleveryOrderDate"
+            ]
+            
+            # Filter and reorder columns that actually exist in the DataFrame
+            existing_ordered_columns = [col for col in desired_columns_order if col in df.columns]
+            df = df[existing_ordered_columns]
+
+            st.dataframe(df, use_container_width=True)
+
+            # Add download button
+            csv_file = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Data as CSV",
+                data=csv_file,
+                file_name=f"{os.path.basename(doc_id).replace('.', '_')}_analysis.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        else:
+            st.info("No consolidated data available for display.")
+
+        st.subheader("Extracted Data Details (Raw JSON)")
         with st.expander("View Raw JSON Data"):
             st.json(st.session_state.analysis_results)
 
-        # Display Structured Fields as a table
-        structured_fields = st.session_state.analysis_results.get('structuredFields', {})
-        if structured_fields:
-            st.markdown("---")
-            st.subheader("📋 Structured Fields")
-            
-            # Prepare data for Streamlit table
-            # Separate scalar fields from list fields
-            scalar_fields = {k: v for k, v in structured_fields.items() if not isinstance(v, list)}
-            list_fields_data = {k: v for k, v in structured_fields.items() if isinstance(v, list)}
-
-            # Display scalar fields in two columns
-            if scalar_fields:
-                st.write("**Header Fields:**")
-                scalar_cols = st.columns(min(len(scalar_fields), 2)) # Up to 2 columns for scalars
-                col_idx = 0
-                for key, value in scalar_fields.items():
-                    with scalar_cols[col_idx]:
-                        st.write(f"**{key}:** {value}")
-                    col_idx = (col_idx + 1) % len(scalar_cols) # Cycle through columns
-                st.markdown("---") # Separator before the main table
-
-            # Display list fields as a dataframe (table-like)
-            if list_fields_data:
-                st.write("**Item Details:**")
-                
-                # Determine the maximum number of rows among all lists
-                max_rows = 0
-                if list_fields_data:
-                    max_rows = max(len(v) for v in list_fields_data.values())
-
-                # Create a list of dictionaries for st.dataframe
-                table_data_for_dataframe = []
-                for i in range(max_rows):
-                    row = {}
-                    for key, values in list_fields_data.items():
-                        # Get value at current index, or None/empty string if index out of bounds
-                        row[key] = values[i] if i < len(values) else ""
-                    table_data_for_dataframe.append(row)
-                
-                if table_data_for_dataframe:
-                    st.dataframe(table_data_for_dataframe, use_container_width=True)
-                else:
-                    st.info("No structured item details found for this document.")
-            else:
-                st.info("No structured item details found for this document.")
-
-        else:
-            st.info("No structured fields found for this document.")
-
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-        # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
-        # if parsed_tables:
-        #     st.markdown("---")
-        #     st.subheader("📊 Parsed Tables (Markdown)")
-        #     for i, table_md in enumerate(parsed_tables):
-        #         st.write(f"**Table {i+1}:**")
-        #         st.markdown(table_md) # Streamlit renders Markdown directly
-        #         st.markdown("---")
-        # else:
-        #     st.info("No generic tables extracted or parsed for this document.")
+        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        if parsed_tables:
+            st.markdown("---")
+            st.subheader("📊 Parsed Tables (Markdown)")
+            for i, table_md in enumerate(parsed_tables):
+                st.write(f"**Table {i+1}:**")
+                st.markdown(table_md) # Streamlit renders Markdown directly
+                st.markdown("---")
+        else:
+            st.info("No generic tables extracted or parsed for this document.")
 
-        # # Display Queries (will show "No queries found" as expected)
-        # queries = st.session_state.analysis_results.get('Queries', {})
-        # if queries:
-        #     st.markdown("---")
-        #     st.subheader("🔍 Query Results")
-        #     for alias, answer in queries.items():
-        #         st.write(f"- **{alias}:** {answer}")
-        # else:
-        #     st.info("No queries found for this document.")
+        # Display Queries (will show "No queries found" as expected)
+        queries = st.session_state.analysis_results.get('Queries', {})
+        if queries:
+            st.markdown("---")
+            st.subheader("🔍 Query Results")
+            for alias, answer in queries.items():
+                st.write(f"- **{alias}:** {answer}")
+        else:
+            st.info("No queries found for this document.")
+
+if not uploaded_file:
+    st.info("💡 Please select a file to upload")
+elif not user_folder_name:
+    st.info("💡 Please enter an S3 folder name.")
