@@ -55,7 +55,7 @@ def format_timestamp(ms_timestamp):
             dt_jakarta = dt_utc.astimezone(JAKARTA_TZ)
             return dt_jakarta.strftime("%d/%m/%Y %H:%M:%S")
         except (ValueError, TypeError) as e:
-            # st.error(f"Error converting timestamp '{ms_timestamp}': {e}") # Removed for cleaner UI
+            # Removed st.error here to prevent repetitive messages on reruns
             return "Invalid Timestamp"
     return "N/A"
 
@@ -166,7 +166,7 @@ if st.session_state.uploaded_document_id:
 
     # Parameters for fetching retries within a single streamlit rerun
     max_fetch_retries = 20 # Maximum attempts to fetch results if 404
-    fetch_retry_interval_seconds = 10 # Time to wait between fetch retries (if 404)
+    fetch_retry_interval_seconds = 15 # Time to wait between fetch retries (if 404)
     
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
@@ -185,7 +185,7 @@ if st.session_state.uploaded_document_id:
                             st.success("✅ Results found!")
                             st.session_state.analysis_results = response.json()
                             st.session_state.fetch_retries_count = 0 # Reset on success
-                            fetch_placeholder.empty() # Clear the spinner/messages
+                            # Removed fetch_placeholder.empty() here
                             break # Exit the while loop
                         elif response.status_code == 404:
                             st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
@@ -198,12 +198,12 @@ if st.session_state.uploaded_document_id:
                             with st.expander("Response Details"):
                                 st.text(response.text)
                             st.session_state.fetch_retries_count = 0 # Reset on other error
-                            fetch_placeholder.empty() # Clear the spinner/messages
+                            # Removed fetch_placeholder.empty() here
                             break # Exit loop on other errors
                     except Exception as e:
                         st.error(f"❌ Network or API error during fetch: {e}")
                         st.session_state.fetch_retries_count = 0 # Reset on network error
-                        fetch_placeholder.empty() # Clear the spinner/messages
+                        # Removed fetch_placeholder.empty() here
                         break # Exit loop on network error
                 
     if st.session_state.analysis_results:
