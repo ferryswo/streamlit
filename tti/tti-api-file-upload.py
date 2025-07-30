@@ -139,9 +139,9 @@ if uploaded_file and api_upload_url: # These conditions prevent buttons from sho
                         st.session_state.uploaded_document_id = current_document_id # Store the document ID
                         
                         # --- NEW: Wait 15 seconds after successful upload ---
-                        st.info("Waiting 15 seconds for backend processing to initiate...")
+                        # st.info("Waiting 15 seconds for backend processing to initiate...")
                         time.sleep(15) 
-                        st.info("Wait complete. Attempting to fetch results...")
+                        # st.info("Wait complete. Attempting to fetch results...")
                         # --- END NEW ---
 
                     else:
