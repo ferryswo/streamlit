@@ -86,7 +86,7 @@ with st.container():
     st.subheader("📤 File Upload")
     uploaded_file = st.file_uploader(
         "", 
-        label_visibility="collapsed", 
+        label_visibility="none", 
         accept_multiple_files=False
     )
     
