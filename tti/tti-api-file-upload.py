@@ -59,6 +59,19 @@ def format_timestamp(ms_timestamp):
             return "Invalid Timestamp"
     return "N/A"
 
+# New function to standardize delivery date format
+def format_delivery_date(date_string):
+    if not date_string:
+        return ""
+    try:
+        # Attempt to parse the date string. errors='coerce' turns unparseable dates into NaT (Not a Time).
+        parsed_date = pd.to_datetime(date_string, errors='coerce')
+        if pd.isna(parsed_date):
+            return date_string # Return original string if parsing failed
+        return parsed_date.strftime("%d/%m/%Y") # Format to DD/MM/YYYY
+    except Exception:
+        return date_string # Fallback in case of unexpected errors
+
 with st.container():
     # st.markdown('<div class="api-section">', unsafe_allow_html=True)
     # st.subheader("🔗 API Configuration")
@@ -238,7 +251,10 @@ if st.session_state.uploaded_document_id:
             qty_outbound_list = ['' for _ in range(len(qty_inbound_list))] # New empty column
             unit_price_list = structured_fields.get('UnitPrice', [])
             delivery_order_number_list = structured_fields.get('DeleveryOrderNumber', [])
-            date_of_delivery_list = structured_fields.get('DeleveryOrderDate', [])
+            
+            # Apply format_delivery_date to each item in the list
+            raw_delivery_dates = structured_fields.get('DeleveryOrderDate', [])
+            formatted_delivery_dates = [format_delivery_date(date_str) for date_str in raw_delivery_dates]
 
             # --- CREATE COMBINED DATA FOR DATAFRAME ---
             max_rows = max(len(qty_inbound_list), len(unit_price_list), len(item_name_list))
@@ -255,7 +271,7 @@ if st.session_state.uploaded_document_id:
                     "PO Number": po_no,
                     "Qty Inbound": qty_inbound_list[i] if i < len(qty_inbound_list) else "",
                     "No. Surat Jalan Supplier": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",                    
-                    "Tanggal SJ Supplier": date_of_delivery_list[i] if i < len(date_of_delivery_list) else "",
+                    "Tanggal SJ Supplier": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "",
                     "Invoice Number": invoice_no,
                     "No. Faktur Supplier": tax_no,
                     "Qty Outbound": qty_outbound_list[i] if i < len(qty_outbound_list) else "",
