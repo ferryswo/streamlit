@@ -60,18 +60,18 @@ def format_timestamp(ms_timestamp):
     return "N/A"
 
 with st.container():
-    st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    st.subheader("🔗 API Configuration")
-    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    # st.subheader("🔗 API Configuration")
+    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
-    st.markdown("---")
-    st.markdown("##### S3 Folder Configuration")
+    # st.markdown("---")
+    st.markdown("##### Customer Name")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        placeholder="Enter the Customer name (e.g., 'Bungasari', 'Haldin')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     
     # Ensure user_folder_name has a trailing slash if not empty
@@ -116,7 +116,7 @@ with st.container():
             # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
             api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
             
-            st.info(f"Generated API URL for upload: `{api_upload_url}`")
+            # st.info(f"Generated API URL for upload: `{api_upload_url}`")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -141,7 +141,7 @@ if uploaded_file and api_upload_url: # These conditions prevent buttons from sho
                         # --- NEW: Wait 15 seconds after successful upload ---
                         # st.info("Waiting 15 seconds for backend processing to initiate...")
                         # time.sleep(15) 
-                        st.info("Wait complete. Attempting to fetch results...")
+                        # st.info("Wait complete. Attempting to fetch results...")
                         # --- END NEW ---
 
                     else:
@@ -212,9 +212,9 @@ if st.session_state.uploaded_document_id:
                         break # Exit loop on network error
                 
     if st.session_state.analysis_results:
-        st.subheader("Extracted Data Details")
-        with st.expander("View Raw JSON Data"):
-            st.json(st.session_state.analysis_results)
+        # st.subheader("Extracted Data Details")
+        # with st.expander("View Raw JSON Data"):
+        #     st.json(st.session_state.analysis_results)
 
         structured_fields = st.session_state.analysis_results.get('structuredFields', {})
         if structured_fields:
@@ -299,26 +299,26 @@ if st.session_state.uploaded_document_id:
             st.info("No structured fields found for this document.")
 
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
-        if parsed_tables:
-            st.markdown("---")
-            st.subheader("📊 Parsed Tables (Markdown)")
-            for i, table_md in enumerate(parsed_tables):
-                st.write(f"**Table {i+1}:**")
-                st.markdown(table_md) # Streamlit renders Markdown directly
-                st.markdown("---")
-        else:
-            st.info("No generic tables extracted or parsed for this document.")
+        # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        # if parsed_tables:
+        #     st.markdown("---")
+        #     st.subheader("📊 Parsed Tables (Markdown)")
+        #     for i, table_md in enumerate(parsed_tables):
+        #         st.write(f"**Table {i+1}:**")
+        #         st.markdown(table_md) # Streamlit renders Markdown directly
+        #         st.markdown("---")
+        # else:
+        #     st.info("No generic tables extracted or parsed for this document.")
 
         # Display Queries (will show "No queries found" as expected)
-        queries = st.session_state.analysis_results.get('Queries', {})
-        if queries:
-            st.markdown("---")
-            st.subheader("🔍 Query Results")
-            for alias, answer in queries.items():
-                st.write(f"- **{alias}:** {answer}")
-        else:
-            st.info("No queries found for this document.")
+        # queries = st.session_state.analysis_results.get('Queries', {})
+        # if queries:
+        #     st.markdown("---")
+        #     st.subheader("🔍 Query Results")
+        #     for alias, answer in queries.items():
+        #         st.write(f"- **{alias}:** {answer}")
+        # else:
+        #     st.info("No queries found for this document.")
 
 if not uploaded_file:
     st.info("💡 Please select a file to upload")
