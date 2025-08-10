@@ -17,7 +17,7 @@ st.markdown("""
 
 /* Custom CSS to change the file size limit text */
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small {
-    display: none; /* Hide the original text */
+    display: block; /* Hide the original text */
 }
 [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
     content: 'Limit 10MB per file'; /* Add your custom text */
@@ -60,18 +60,18 @@ def format_timestamp(ms_timestamp):
     return "N/A"
 
 with st.container():
-    st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    st.subheader("🔗 API Configuration")
-    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    # st.subheader("🔗 API Configuration")
+    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
     st.markdown("---")
-    st.markdown("##### S3 Folder Configuration")
+    st.markdown("##### Customer Name")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        placeholder="Enter the Customer name (e.g., 'Bungasari', 'Haldin')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     
     # Ensure user_folder_name has a trailing slash if not empty
@@ -116,7 +116,7 @@ with st.container():
             # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
             api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
             
-            st.info(f"Generated API URL for upload: `{api_upload_url}`")
+            # st.info(f"Generated API URL for upload: `{api_upload_url}`")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -137,12 +137,6 @@ if uploaded_file and api_upload_url: # These conditions prevent buttons from sho
                     if response.status_code == 200:
                         st.success(f"✅ Upload successful! Status: {response.status_code}")
                         st.session_state.uploaded_document_id = current_document_id # Store the document ID
-                        
-                        # --- NEW: Wait 15 seconds after successful upload ---
-                        st.info("Waiting 15 seconds for backend processing to initiate...")
-                        time.sleep(15) 
-                        st.info("Wait complete. Attempting to fetch results...")
-                        # --- END NEW ---
 
                     else:
                         st.warning(f"⚠️ Upload failed. Status: {response.status_code}")
@@ -173,17 +167,18 @@ if st.session_state.uploaded_document_id:
 
     # Parameters for fetching retries within a single streamlit rerun
     max_fetch_retries = 20 # Maximum attempts to fetch results if 404
-    fetch_retry_interval_seconds = 5 # Time to wait between fetch retries (if 404)
+    fetch_retry_interval_seconds = 10 # Time to wait between fetch retries (if 404)
     
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
     # Only fetch if results are not already present
     if st.session_state.analysis_results is None:
-        st.info(f"Attempting to fetch results from: `{results_api_url}`")
+        time.sleep(15) 
+        # st.info(f"Attempting to fetch results...")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
         with fetch_placeholder.container(): # Use container to clear previous messages
-            with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
+            with st.spinner(f"Fetching and waiting for analysis results..."):
                 while st.session_state.fetch_retries_count < max_fetch_retries:
                     try:
                         response = requests.get(results_api_url)
@@ -194,7 +189,7 @@ if st.session_state.uploaded_document_id:
                             st.session_state.fetch_retries_count = 0 # Reset on success
                             break # Exit the while loop
                         elif response.status_code == 404:
-                            st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
+                            st.info(f"Analysis still in progress or not found... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
                             st.session_state.fetch_retries_count += 1
                             time.sleep(fetch_retry_interval_seconds) # Wait before retrying
                             if st.session_state.fetch_retries_count >= max_fetch_retries:
@@ -288,26 +283,26 @@ if st.session_state.uploaded_document_id:
             st.json(st.session_state.analysis_results)
 
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
-        if parsed_tables:
-            st.markdown("---")
-            st.subheader("📊 Parsed Tables (Markdown)")
-            for i, table_md in enumerate(parsed_tables):
-                st.write(f"**Table {i+1}:**")
-                st.markdown(table_md) # Streamlit renders Markdown directly
-                st.markdown("---")
-        else:
-            st.info("No generic tables extracted or parsed for this document.")
+        # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        # if parsed_tables:
+        #     st.markdown("---")
+        #     st.subheader("📊 Parsed Tables (Markdown)")
+        #     for i, table_md in enumerate(parsed_tables):
+        #         st.write(f"**Table {i+1}:**")
+        #         st.markdown(table_md) # Streamlit renders Markdown directly
+        #         st.markdown("---")
+        # else:
+        #     st.info("No generic tables extracted or parsed for this document.")
 
         # Display Queries (will show "No queries found" as expected)
-        queries = st.session_state.analysis_results.get('Queries', {})
-        if queries:
-            st.markdown("---")
-            st.subheader("🔍 Query Results")
-            for alias, answer in queries.items():
-                st.write(f"- **{alias}:** {answer}")
-        else:
-            st.info("No queries found for this document.")
+        # queries = st.session_state.analysis_results.get('Queries', {})
+        # if queries:
+        #     st.markdown("---")
+        #     st.subheader("🔍 Query Results")
+        #     for alias, answer in queries.items():
+        #         st.write(f"- **{alias}:** {answer}")
+        # else:
+        #     st.info("No queries found for this document.")
 
 if not uploaded_file:
     st.info("💡 Please select a file to upload")
