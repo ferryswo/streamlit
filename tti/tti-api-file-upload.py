@@ -180,7 +180,7 @@ if st.session_state.uploaded_document_id:
     # Only fetch if results are not already present
     if st.session_state.analysis_results is None:
         time.sleep(10)
-        st.info(f"Attempting to fetch results from: `{results_api_url}`")
+        # st.info(f"Attempting to fetch results from: `{results_api_url}`")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
         with fetch_placeholder.container(): # Use container to clear previous messages
