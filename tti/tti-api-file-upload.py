@@ -17,16 +17,15 @@ st.markdown("""
 
 /* Custom CSS to change the file size limit text */
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small {
-    display: none;
-    color: transparent;/* Hide the original text */
+    display: none; /* Hide the original text */
 }
-[data-testid="stFileUploaderDropzoneInstructions"] > div::after {
-    content: 'Limit 10MB per file'; /* Add your custom text */
-    display: block; /* Make sure it's visible */
-    font-size: 0.9em; /* Adjust font size if needed */
-    color: #888; /* Adjust color if needed */
-    margin-top: 5px; /* Add some spacing if needed */
-}
+# [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
+#     content: 'Limit 10MB per file'; /* Add your custom text */
+#     display: block; /* Make sure it's visible */
+#     font-size: 0.9em; /* Adjust font size if needed */
+#     color: #888; /* Adjust color if needed */
+#     margin-top: 5px; /* Add some spacing if needed */
+# }
 </style>
 """, unsafe_allow_html=True)
 
@@ -257,8 +256,8 @@ if st.session_state.uploaded_document_id:
             # Ensure all expected columns are present, even if empty
             desired_columns_order = [
                 "Document ID", "Classification", "Classified At",
-                "Invoice Number", "PO Number", "Tax Number",
-                "ItemName", "Quantity", "UnitPrice", "DeleveryOrderNumber", "DeleveryOrderDate"
+                "PO Number", "Quantity", "DeleveryOrderNumber", "Invoice Number", "Tax Number",
+                "ItemName", "UnitPrice", "DeleveryOrderDate"
             ]
             
             # Filter and reorder columns that actually exist in the DataFrame
@@ -279,9 +278,9 @@ if st.session_state.uploaded_document_id:
         else:
             st.info("No consolidated data available for display.")
 
-        st.subheader("Extracted Data Details (Raw JSON)")
-        with st.expander("View Raw JSON Data"):
-            st.json(st.session_state.analysis_results)
+        # st.subheader("Extracted Data Details (Raw JSON)")
+        # with st.expander("View Raw JSON Data"):
+        #     st.json(st.session_state.analysis_results)
 
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
         # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
