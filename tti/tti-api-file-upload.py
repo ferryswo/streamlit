@@ -6,7 +6,6 @@ import json
 from datetime import datetime
 import pytz # For timezone conversion
 import pandas as pd # Import pandas for DataFrame operations
-import xlsxwriter # For Excel download
 
 st.set_page_config(page_title="API File Manager", page_icon="📁", layout="wide")
 
