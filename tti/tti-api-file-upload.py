@@ -17,7 +17,8 @@ st.markdown("""
 
 /* Custom CSS to change the file size limit text */
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small {
-    display: block; /* Hide the original text */
+    display: none;
+    color: transparent;/* Hide the original text */
 }
 [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
     content: 'Limit 10MB per file'; /* Add your custom text */
