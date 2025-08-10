@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 import pytz # For timezone conversion
 import pandas as pd # Import pandas for DataFrame operations
+import xlsxwriter # For Excel download
 
 st.set_page_config(page_title="API File Manager", page_icon="📁", layout="wide")
 
@@ -60,18 +61,18 @@ def format_timestamp(ms_timestamp):
     return "N/A"
 
 with st.container():
-    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    # st.subheader("🔗 API Configuration")
-    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    st.subheader("🔗 API Configuration")
+    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
     st.markdown("---")
-    st.markdown("##### Customer Name")
+    st.markdown("##### S3 Folder Configuration")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the Customer name (e.g., 'Bungasari', 'Haldin')",
+        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
     )
     
     # Ensure user_folder_name has a trailing slash if not empty
@@ -116,7 +117,7 @@ with st.container():
             # and it routes to an S3 proxy where the full path is bucket_name/folder/filename
             api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
             
-            # st.info(f"Generated API URL for upload: `{api_upload_url}`")
+            st.info(f"Generated API URL for upload: `{api_upload_url}`")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -137,6 +138,12 @@ if uploaded_file and api_upload_url: # These conditions prevent buttons from sho
                     if response.status_code == 200:
                         st.success(f"✅ Upload successful! Status: {response.status_code}")
                         st.session_state.uploaded_document_id = current_document_id # Store the document ID
+                        
+                        # --- NEW: Wait 15 seconds after successful upload ---
+                        # st.info("Waiting 15 seconds for backend processing to initiate...")
+                        # time.sleep(15) 
+                        st.info("Wait complete. Attempting to fetch results...")
+                        # --- END NEW ---
 
                     else:
                         st.warning(f"⚠️ Upload failed. Status: {response.status_code}")
@@ -167,18 +174,18 @@ if st.session_state.uploaded_document_id:
 
     # Parameters for fetching retries within a single streamlit rerun
     max_fetch_retries = 20 # Maximum attempts to fetch results if 404
-    fetch_retry_interval_seconds = 10 # Time to wait between fetch retries (if 404)
+    fetch_retry_interval_seconds = 7 # Time to wait between fetch retries (if 404)
     
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
     # Only fetch if results are not already present
     if st.session_state.analysis_results is None:
-        time.sleep(15) 
-        # st.info(f"Attempting to fetch results...")
+        time.sleep(10)
+        st.info(f"Attempting to fetch results from: `{results_api_url}`")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
         with fetch_placeholder.container(): # Use container to clear previous messages
-            with st.spinner(f"Fetching and waiting for analysis results..."):
+            with st.spinner(f"Fetching and waiting for analysis results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
                 while st.session_state.fetch_retries_count < max_fetch_retries:
                     try:
                         response = requests.get(results_api_url)
@@ -189,7 +196,7 @@ if st.session_state.uploaded_document_id:
                             st.session_state.fetch_retries_count = 0 # Reset on success
                             break # Exit the while loop
                         elif response.status_code == 404:
-                            st.info(f"Analysis still in progress or not found... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
+                            st.info(f"Analysis still in progress or not found. Retrying in {fetch_retry_interval_seconds} seconds... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})")
                             st.session_state.fetch_retries_count += 1
                             time.sleep(fetch_retry_interval_seconds) # Wait before retrying
                             if st.session_state.fetch_retries_count >= max_fetch_retries:
@@ -206,103 +213,113 @@ if st.session_state.uploaded_document_id:
                         break # Exit loop on network error
                 
     if st.session_state.analysis_results:
-        # Prepare header fields for the combined table
-        doc_id = st.session_state.analysis_results.get('documentId', 'N/A')
-        classification = st.session_state.analysis_results.get('classifiedData', 'N/A')
-        timestamp_ms = st.session_state.analysis_results.get('classificationTimestamp')
-        classified_at = format_timestamp(timestamp_ms)
+        st.subheader("Extracted Data Details")
+        with st.expander("View Raw JSON Data"):
+            st.json(st.session_state.analysis_results)
 
         structured_fields = st.session_state.analysis_results.get('structuredFields', {})
-        
-        invoice_no = structured_fields.get('InvoiceNumber', 'N/A')
-        po_no = structured_fields.get('PONo', 'N/A')
-        tax_no = structured_fields.get('TaxNo', 'N/A')
-
-        # Get item details (list fields)
-        list_fields_data = {k: v for k, v in structured_fields.items() if isinstance(v, list)}
-
-        # Determine the maximum number of rows among all lists
-        max_rows = 1 # At least one row for header info if no item details
-        if list_fields_data:
-            max_rows = max(len(v) for v in list_fields_data.values())
-            if max_rows == 0: # If lists are empty, still show one row for header
-                max_rows = 1
-
-        # Create a list of dictionaries for the combined dataframe
-        combined_table_data = []
-        for i in range(max_rows):
-            row = {}
-            # Add header fields to each row
-            row["Document ID"] = doc_id
-            row["Classification"] = classification
-            row["Classified At"] = classified_at
-            row["Invoice Number"] = invoice_no
-            row["PO Number"] = po_no
-            row["Tax Number"] = tax_no
-
-            # Add item details for current row
-            for key, values in list_fields_data.items():
-                row[key] = values[i] if i < len(values) else ""
-            combined_table_data.append(row)
-        
-        if combined_table_data:
+        if structured_fields:
             st.markdown("---")
             st.subheader("📋 Consolidated Document Data")
             
-            # Create DataFrame
-            df = pd.DataFrame(combined_table_data)
-            
-            # Reorder columns to match the desired output visually
-            # Ensure all expected columns are present, even if empty
-            desired_columns_order = [
-                "Document ID", "Classification", "Classified At",
-                "PO Number", "Quantity", "DeleveryOrderNumber", "Invoice Number", "Tax Number",
-                "ItemName", "UnitPrice", "DeleveryOrderDate"
-            ]
-            
-            # Filter and reorder columns that actually exist in the DataFrame
-            existing_ordered_columns = [col for col in desired_columns_order if col in df.columns]
-            df = df[existing_ordered_columns]
+            # --- EXTRACT ALL HEADER AND ITEM DATA ---
+            doc_id = st.session_state.analysis_results.get('documentId', 'N/A')
+            classification = st.session_state.analysis_results.get('classifiedData', 'N/A')
+            timestamp_ms = st.session_state.analysis_results.get('classificationTimestamp')
+            classified_at = format_timestamp(timestamp_ms)
 
-            st.dataframe(df, use_container_width=True)
+            # Header scalar fields
+            invoice_no = structured_fields.get('InvoiceNumber', 'N/A')
+            po_no = structured_fields.get('PONo', 'N/A')
+            tax_no = structured_fields.get('TaxNo', 'N/A')
 
-            # Add download button
-            csv_file = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Data as CSV",
-                data=csv_file,
-                file_name=f"{os.path.basename(doc_id).replace('.', '_')}_analysis.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
+            # Item list fields (handle renaming and new columns)
+            item_name_list = structured_fields.get('ItemName', [])
+            qty_inbound_list = structured_fields.get('Quantity', [])
+            qty_outbound_list = ['' for _ in range(len(qty_inbound_list))] # New empty column
+            unit_price_list = structured_fields.get('UnitPrice', [])
+            delivery_order_number_list = structured_fields.get('DeleveryOrderNumber', [])
+            date_of_delivery_list = structured_fields.get('DeleveryOrderDate', [])
+
+            # --- CREATE COMBINED DATA FOR DATAFRAME ---
+            max_rows = max(len(qty_inbound_list), len(unit_price_list), len(item_name_list))
+            if max_rows == 0:
+                max_rows = 1
+
+            combined_table_data = []
+
+            for i in range(max_rows):
+                row = {
+                    "Document ID": doc_id,
+                    "Classification": classification,
+                    "Classified At": classified_at,
+                    "PO Number": po_no,
+                    "Qty Inbound": qty_inbound_list[i] if i < len(qty_inbound_list) else "",
+                    "No. Surat Jalan Supplier": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",                    
+                    "Tanggal SJ Supplier": date_of_delivery_list[i] if i < len(date_of_delivery_list) else "",
+                    "Invoice Number": invoice_no,
+                    "No. Faktur Supplier": tax_no,
+                    "Qty Outbound": qty_outbound_list[i] if i < len(qty_outbound_list) else "",
+                    "ItemName": item_name_list[i] if i < len(item_name_list) else "",
+                    "UnitPrice": unit_price_list[i] if i < len(unit_price_list) else "",
+                }
+                combined_table_data.append(row)
+            
+            if combined_table_data:
+                # --- CONVERT TO DATAFRAME AND REORDER COLUMNS ---
+                df = pd.DataFrame(combined_table_data)
+                
+                desired_columns_order = [
+                    "Document ID", "Classification", "Classified At",
+                    "PO Number", "Qty Inbound", "No. Surat Jalan Supplier", "Tanggal SJ Supplier",
+                    "Invoice Number", "No. Faktur Supplier", "Qty Outbound", 
+                    "ItemName", "UnitPrice",
+                    
+                ]
+                
+                # Filter and reorder columns that actually exist in the DataFrame
+                existing_ordered_columns = [col for col in desired_columns_order if col in df.columns]
+                df = df[existing_ordered_columns]
+
+                st.dataframe(df, use_container_width=True)
+
+                # --- ADD DOWNLOAD BUTTONS ---
+                csv_data = df.to_csv(index=False).encode('utf-8')
+                
+                st.download_button(
+                    label="Download Data as CSV",
+                    data=csv_data,
+                    file_name=f"{os.path.basename(doc_id).replace('.', '_')}_analysis.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+            else:
+                st.info("No consolidated data available for display.")
+
         else:
-            st.info("No consolidated data available for display.")
-
-        # st.subheader("Extracted Data Details (Raw JSON)")
-        # with st.expander("View Raw JSON Data"):
-        #     st.json(st.session_state.analysis_results)
+            st.info("No structured fields found for this document.")
 
         # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-        # parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
-        # if parsed_tables:
-        #     st.markdown("---")
-        #     st.subheader("📊 Parsed Tables (Markdown)")
-        #     for i, table_md in enumerate(parsed_tables):
-        #         st.write(f"**Table {i+1}:**")
-        #         st.markdown(table_md) # Streamlit renders Markdown directly
-        #         st.markdown("---")
-        # else:
-        #     st.info("No generic tables extracted or parsed for this document.")
+        parsed_tables = st.session_state.analysis_results.get('ParsedTablesMarkdown', [])
+        if parsed_tables:
+            st.markdown("---")
+            st.subheader("📊 Parsed Tables (Markdown)")
+            for i, table_md in enumerate(parsed_tables):
+                st.write(f"**Table {i+1}:**")
+                st.markdown(table_md) # Streamlit renders Markdown directly
+                st.markdown("---")
+        else:
+            st.info("No generic tables extracted or parsed for this document.")
 
         # Display Queries (will show "No queries found" as expected)
-        # queries = st.session_state.analysis_results.get('Queries', {})
-        # if queries:
-        #     st.markdown("---")
-        #     st.subheader("🔍 Query Results")
-        #     for alias, answer in queries.items():
-        #         st.write(f"- **{alias}:** {answer}")
-        # else:
-        #     st.info("No queries found for this document.")
+        queries = st.session_state.analysis_results.get('Queries', {})
+        if queries:
+            st.markdown("---")
+            st.subheader("🔍 Query Results")
+            for alias, answer in queries.items():
+                st.write(f"- **{alias}:** {answer}")
+        else:
+            st.info("No queries found for this document.")
 
 if not uploaded_file:
     st.info("💡 Please select a file to upload")
