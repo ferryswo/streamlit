@@ -248,7 +248,7 @@ if st.session_state.uploaded_document_id:
             # Item list fields (handle renaming and new columns)
             item_name_list = structured_fields.get('ItemName', [])
             qty_inbound_list = structured_fields.get('Quantity', [])
-            qty_outbound_list = ['' for _ in range(len(qty_inbound_list))] # New empty column
+            qty_outbound_list = structured_fields.get('Quantity', [])
             unit_price_list = structured_fields.get('UnitPrice', [])
             delivery_order_number_list = structured_fields.get('DeleveryOrderNumber', [])
             
