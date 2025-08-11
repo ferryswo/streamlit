@@ -9,25 +9,25 @@ import pandas as pd # Import pandas for DataFrame operations
 
 st.set_page_config(page_title="API File Manager", page_icon="📁", layout="wide")
 
-# st.markdown("""
-# <style>
-# .main-header { font-size: 2.5rem; color: #1f77b4; margin-bottom: 2rem; }
-# .upload-section { background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
-# .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
+st.markdown("""
+<style>
+.main-header { font-size: 2.5rem; color: #1f77b4; margin-bottom: 2rem; }
+.upload-section { background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
+.api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 
 /* Custom CSS to change the file size limit text */
-# [data-testid="stFileUploaderDropzoneInstructions"] > div::before {
-#     display: none; /* Hide the original text */
-# }
-# [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
-#     content: 'Limit 10MB per file'; /* Add your custom text */
-#     display: block; /* Make sure it's visible */
-#     font-size: 0.9em; /* Adjust font size if needed */
-#     color: #888; /* Adjust color if needed */
-#     margin-top: 5px; /* Add some spacing if needed */
-# }
-# </style>
-# """, unsafe_allow_html=True)
+[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
+    display: none; /* Hide the original text */
+}
+[data-testid="stFileUploaderDropzoneInstructions"] > div::after {
+    content: 'Limit 10MB per file'; /* Add your custom text */
+    display: block; /* Make sure it's visible */
+    font-size: 0.9em; /* Adjust font size if needed */
+    color: #888; /* Adjust color if needed */
+    margin-top: 5px; /* Add some spacing if needed */
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_html=True)
 
