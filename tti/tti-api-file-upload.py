@@ -204,7 +204,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             results_api_url = f"{BASE_API_ROOT_URL}/results/{doc_id_to_fetch}"
             
             with fetch_placeholder.container(): # Use container to clear previous messages for current file
-                with st.spinner(f"Fetching '{os.path.basename(doc_id_to_fetch)}' results... (Attempt {st.session_state.fetch_retries_count + 1}/{max_fetch_retries})"):
+                with st.spinner(f"Fetching Analysis Results"):
                     current_doc_fetched = False
                     for i in range(st.session_state.fetch_retries_count, max_fetch_retries): # Continue from last retry count
                         try:
