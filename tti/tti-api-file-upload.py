@@ -186,13 +186,13 @@ if st.session_state.uploaded_document_id:
 
     # Parameters for fetching retries within a single streamlit rerun
     max_fetch_retries = 20 # Maximum attempts to fetch results if 404
-    fetch_retry_interval_seconds = 7 # Time to wait between fetch retries (if 404)
+    fetch_retry_interval_seconds = 5 # Time to wait between fetch retries (if 404)
     
     results_api_url = f"{BASE_API_ROOT_URL}/results/{st.session_state.uploaded_document_id}"
     
     # Only fetch if results are not already present
     if st.session_state.analysis_results is None:
-        time.sleep(10)
+        time.sleep(5)
         # st.info(f"Attempting to fetch results from: `{results_api_url}`")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
