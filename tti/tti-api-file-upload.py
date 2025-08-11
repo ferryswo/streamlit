@@ -312,7 +312,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             st.dataframe(df_combined, use_container_width=True)
 
             # Add download button for the single combined table
-            excel_data = df_combined.to_excel(index=False).encode('utf-8')
+            excel_data = to_excel(df_combined)
             
             st.download_button(
                 label="Download All Consolidated Data as Excel",
