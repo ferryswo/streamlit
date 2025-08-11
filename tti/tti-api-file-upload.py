@@ -100,7 +100,7 @@ with st.container():
     uploaded_file = st.file_uploader(
         "", 
         label_visibility="collapsed", 
-        accept_multiple_files=True
+        accept_multiple_files=False
     )
     
     api_upload_url = None
