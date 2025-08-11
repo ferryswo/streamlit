@@ -99,8 +99,7 @@ with st.container():
     st.subheader("📤 File Upload")
     uploaded_file = st.file_uploader(
         "", 
-        label_visibility="collapsed", 
-        accept_multiple_files=False
+        label_visibility="collapsed"
     )
     
     api_upload_url = None
