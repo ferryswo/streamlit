@@ -72,13 +72,6 @@ def format_delivery_date(date_string):
     except Exception:
         return date_string # Fallback in case of unexpected errors
 
-output = io.BytesIO()
-def to_excel(df):
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Data')
-        writer.save()
-    return output.getvalue()
-
 with st.container():
     # st.markdown('<div class="api-section">', unsafe_allow_html=True)
     # st.subheader("🔗 API Configuration")
@@ -319,13 +312,17 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             st.dataframe(df_combined, use_container_width=True)
 
             # Add download button for the single combined table
-            excel_data = to_excel(df_combined)
-            
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                df_combined.to_excel(writer, index=False, sheet_name='Analysis Results')
+            excel_buffer.seek(0) # Rewind the buffer to the beginning
+
             st.download_button(
                 label="Download All Consolidated Data as Excel",
-                data=excel_data,
-                file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                mime="application/vnd.ms-excel"
+                data=excel_buffer, # Pass the BytesIO object
+                file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", # Change extension
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", # Excel MIME type
+                use_container_width=True
             )
         else:
             st.info("No consolidated data available for display.")
