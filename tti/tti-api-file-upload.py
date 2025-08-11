@@ -16,7 +16,7 @@ st.markdown("""
 .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 
 /* Custom CSS to change the file size limit text */
-[data-testid="stFileUploaderDropzoneInstructions"] > div::small {
+[data-testid="stFileUploaderDropzoneInstructions"] > div::before {
     display: none; /* Hide the original text */
 }
 [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
