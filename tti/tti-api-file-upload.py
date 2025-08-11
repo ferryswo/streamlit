@@ -19,13 +19,13 @@ st.markdown("""
 [data-testid="stFileUploaderDropzoneInstructions"] > div::small {
     display: none; /* Hide the original text */
 }
-# [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
-#     content: 'Limit 10MB per file'; /* Add your custom text */
-#     display: block; /* Make sure it's visible */
-#     font-size: 0.9em; /* Adjust font size if needed */
-#     color: #888; /* Adjust color if needed */
-#     margin-top: 5px; /* Add some spacing if needed */
-# }
+[data-testid="stFileUploaderDropzoneInstructions"] > div::after {
+    content: 'Limit 10MB per file'; /* Add your custom text */
+    display: block; /* Make sure it's visible */
+    font-size: 0.9em; /* Adjust font size if needed */
+    color: #888; /* Adjust color if needed */
+    margin-top: 5px; /* Add some spacing if needed */
+}
 </style>
 """, unsafe_allow_html=True)
 
