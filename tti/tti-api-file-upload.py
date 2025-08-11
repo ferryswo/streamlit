@@ -72,9 +72,8 @@ def format_delivery_date(date_string):
     except Exception:
         return date_string # Fallback in case of unexpected errors
 
-def to_excel(df: pd.DataFrame) -> bytes:
-    """Convert DataFrame to Excel binary for download in Streamlit."""
-    output = io.BytesIO()
+output = io.BytesIO()
+def to_excel(df):
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Data')
         writer.save()
@@ -326,8 +325,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                 label="Download All Consolidated Data as Excel",
                 data=excel_data,
                 file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",                
-                use_container_width=True
+                mime="application/vnd.ms-excel"
             )
         else:
             st.info("No consolidated data available for display.")
