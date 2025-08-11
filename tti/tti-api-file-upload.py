@@ -216,7 +216,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                                 current_doc_fetched = True
                                 break # Exit inner retry loop
                             elif response.status_code == 404:
-                                st.info(f"Analysis for '{os.path.basename(doc_id_to_fetch)}' still in progress. Retrying in {fetch_retry_interval_seconds}s... ({i+1}/{max_fetch_retries})")
+                                # st.info(f"Analysis for '{os.path.basename(doc_id_to_fetch)}' still in progress. Retrying in {fetch_retry_interval_seconds}s... ({i+1}/{max_fetch_retries})")
                                 time.sleep(fetch_retry_interval_seconds)
                             else:
                                 st.error(f"❌ Error fetching results for '{os.path.basename(doc_id_to_fetch)}': Status {response.status_code}")
@@ -312,13 +312,13 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             st.dataframe(df_combined, use_container_width=True)
 
             # Add download button for the single combined table
-            csv_data = df_combined.to_csv(index=False).encode('utf-8')
+            excel_data = df_combined.to_excel(index=False).encode('utf-8')
             
             st.download_button(
-                label="Download All Consolidated Data as xlsx",
-                data=csv_data,
+                label="Download All Consolidated Data as Excel",
+                data=excel_data,
                 file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                mime=".xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",                
                 use_container_width=True
             )
         else:
