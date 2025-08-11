@@ -72,11 +72,13 @@ def format_delivery_date(date_string):
     except Exception:
         return date_string # Fallback in case of unexpected errors
         
-def to_excel(df: pd.DataFrame) -> bytes:
+def to_excel(df):
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Data')
-    return output.getvalue()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.close() # Use writer.close() instead of writer.save() for newer pandas versions
+    processed_data = output.getvalue()
+    return processed_data
 
 with st.container():
     # st.markdown('<div class="api-section">', unsafe_allow_html=True)
