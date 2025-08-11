@@ -16,7 +16,7 @@ st.markdown("""
 .api-section { background: #e8f4fd; padding: 1.5rem; border-radius: 10px; margin: 1rem 0; }
 
 /* Custom CSS to change the file size limit text */
-[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
+[data-testid="stFileUploaderDropzoneInstructions"] > div::small {
     display: none; /* Hide the original text */
 }
 # [data-testid="stFileUploaderDropzoneInstructions"] > div::after {
@@ -79,10 +79,10 @@ with st.container():
     # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
     # st.markdown("---")
-    st.markdown("##### Customer Name")
+    st.markdown("##### Vendor Name")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the Customer name (e.g., 'Bungasari', 'Haldin')",
+        placeholder="Enter the Vendor name (e.g., 'Bungasari', 'Haldin')",
         label_visibility="collapsed",
         help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
@@ -100,7 +100,7 @@ with st.container():
     uploaded_file = st.file_uploader(
         "", 
         label_visibility="collapsed", 
-        accept_multiple_files=False
+        accept_multiple_files=True
     )
     
     api_upload_url = None
