@@ -73,18 +73,18 @@ def format_delivery_date(date_string):
         return date_string # Fallback in case of unexpected errors
 
 with st.container():
-    st.markdown('<div class="api-section">', unsafe_allow_html=True)
-    st.subheader("🔗 API Configuration")
-    st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
-    st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
+    # st.markdown('<div class="api-section">', unsafe_allow_html=True)
+    # st.subheader("🔗 API Configuration")
+    # st.write(f"**Base API Endpoint:** `{BASE_API_ROOT_URL}`")
+    # st.write(f"**Target S3 Bucket:** `{S3_BUCKET_NAME}`")
     
     st.markdown("---")
-    st.markdown("##### S3 Folder Configuration")
+    st.markdown("##### Vendor Name")
     user_folder_name = st.text_input(
         "", 
-        placeholder="Enter the S3 folder name (e.g., 'invoices', 'reports')",
+        placeholder="Enter the Vendor name (e.g., 'Bungasari', 'Haldin')",
         label_visibility="collapsed",
-        help="This will be the sub-folder within your S3 bucket (e.g., 'invoices', 'reports')."
+        help="This will be the sub-folder within your S3 bucket (e.g., 'Bungasari', 'Haldin')."
     )
     
     # Ensure user_folder_name has a trailing slash if not empty
@@ -107,7 +107,7 @@ with st.container():
         
         # --- NEW VALIDATION LOGIC START ---
         if not user_folder_name: # Check if folder name is empty
-            st.error("❌ Please Enter The Customer Name")
+            st.error("❌ Please Enter The Vendoe Name")
             uploaded_files = [] # Clear selected files to block further processing
         # --- NEW VALIDATION LOGIC END ---
 
@@ -133,7 +133,7 @@ if uploaded_files: # Check if there are files to process
                         current_document_id = f"{user_folder_name}{filename}"
                         api_upload_url = f"{BASE_API_ROOT_URL}/{S3_BUCKET_NAME}{current_document_id}"
                         
-                        st.info(f"Uploading '{uploaded_file.name}' to `{api_upload_url}`...")
+                        # st.info(f"Uploading '{uploaded_file.name}' to `{api_upload_url}`...")
                         try:
                             response = requests.put(api_upload_url, data=uploaded_file.getvalue())
                             
@@ -155,9 +155,9 @@ if uploaded_files: # Check if there are files to process
                     if upload_success_count > 0:
                         st.success(f"Successfully uploaded {upload_success_count} of {len(uploaded_files)} files.")
                         # --- NEW: Wait 15 seconds after successful upload batch ---
-                        st.info("Waiting 15 seconds for backend processing to initiate for all uploaded files...")
-                        time.sleep(15) 
-                        st.info("Wait complete. Attempting to fetch results...")
+                        # st.info("Waiting 15 seconds for backend processing to initiate for all uploaded files...")
+                        # time.sleep(15) 
+                        # st.info("Wait complete. Attempting to fetch results...")
                         # --- END NEW ---
                     else:
                         st.error("No files were successfully uploaded.")
@@ -184,7 +184,8 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
     
     # Only fetch if results are not already present (for all docs)
     if not st.session_state.analysis_results_list or len(st.session_state.analysis_results_list) < len(st.session_state.uploaded_document_ids):
-        st.info(f"Attempting to fetch results for {len(st.session_state.uploaded_document_ids)} document(s).")
+        time.sleep(5)
+        # st.info(f"Attempting to fetch results for {len(st.session_state.uploaded_document_ids)} document(s).")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
         # This will hold newly fetched results
@@ -262,7 +263,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             # Get item details (list fields)
             item_name_list = structured_fields.get('ItemName', [])
             qty_inbound_list = structured_fields.get('Quantity', [])
-            qty_outbound_list = ['' for _ in range(len(qty_inbound_list))] # New empty column
+            qty_outbound_list = structured_fields.get('Quantity', [])
             unit_price_list = structured_fields.get('UnitPrice', [])
             delivery_order_number_list = structured_fields.get('DeleveryOrderNumber', [])
             
@@ -281,15 +282,15 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                     "Document ID": doc_id,
                     "Classification": classification,
                     "Classified At": classified_at,
-                    "Invoice Number": invoice_no,
-                    "PO Number": po_no,
-                    "Tax Number": tax_no,
+                    "No Invoice Supplier": invoice_no,
+                    "PO No.": po_no,
+                    "No. Faktur Supplier": tax_no,
                     "ItemName": item_name_list[i] if i < len(item_name_list) else "",
                     "Qty Inbound": qty_inbound_list[i] if i < len(qty_inbound_list) else "",
                     "Qty Outbound": qty_outbound_list[i] if i < len(qty_outbound_list) else "",
                     "UnitPrice": unit_price_list[i] if i < len(unit_price_list) else "",
-                    "DeleveryOrderNumber": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",
-                    "Date Of Delivery": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "" # Use formatted dates
+                    "No. Surat Jalan Supplier": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",
+                    "Tanggal SJ Supplier": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "" # Use formatted dates
                 }
                 all_combined_table_data.append(row) # Add row to the master list
 
@@ -299,9 +300,9 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             
             desired_columns_order = [
                 "Document ID", "Classification", "Classified At",
-                "Invoice Number", "PO Number", "Tax Number",
-                "ItemName", "Qty Inbound", "Qty Outbound", "UnitPrice",
-                "DeleveryOrderNumber", "Date Of Delivery"
+                "PO No.", "Qty Inbound", "No. Surat Jalan Supplier",
+                "Tanggal SJ Supplier", "No Invoice Supplier", "No. Faktur Supplier",
+                "Qty Outbound", "ItemName", "UnitPrice"
             ]
             
             # Filter and reorder columns that actually exist in the DataFrame
@@ -314,47 +315,47 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             csv_data = df_combined.to_csv(index=False).encode('utf-8')
             
             st.download_button(
-                label="Download All Consolidated Data as CSV",
+                label="Download All Consolidated Data as xlsx",
                 data=csv_data,
-                file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
+                file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                mime=".xlsx",
                 use_container_width=True
             )
         else:
             st.info("No consolidated data available for display.")
 
         # --- DISPLAY RAW JSON AND OTHER SECTIONS PER DOCUMENT ---
-        st.markdown("---")
-        st.subheader("Raw JSON and Other Details (Per Document)")
-        for doc_result in st.session_state.analysis_results_list:
-            st.markdown(f"**Details for: `{doc_result.get('documentId', 'Unknown Document')}`**")
+        # st.markdown("---")
+        # st.subheader("Raw JSON and Other Details (Per Document)")
+        # for doc_result in st.session_state.analysis_results_list:
+        #     st.markdown(f"**Details for: `{doc_result.get('documentId', 'Unknown Document')}`**")
             
-            with st.expander("View Raw JSON Data"):
-                st.json(doc_result) # Display raw JSON for this specific document
+        #     with st.expander("View Raw JSON Data"):
+        #         st.json(doc_result) # Display raw JSON for this specific document
 
-            # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
-            parsed_tables = doc_result.get('ParsedTablesMarkdown', [])
-            if parsed_tables:
-                st.markdown("---")
-                st.subheader("📊 Parsed Tables (Markdown)")
-                for i, table_md in enumerate(parsed_tables):
-                    st.write(f"**Table {i+1}:**")
-                    st.markdown(table_md) # Streamlit renders Markdown directly
-                    st.markdown("---")
-            else:
-                st.info("No generic tables extracted or parsed for this document.")
+        #     # Display Parsed Table Markdown (will show "No generic tables extracted" as expected)
+        #     parsed_tables = doc_result.get('ParsedTablesMarkdown', [])
+        #     if parsed_tables:
+        #         st.markdown("---")
+        #         st.subheader("📊 Parsed Tables (Markdown)")
+        #         for i, table_md in enumerate(parsed_tables):
+        #             st.write(f"**Table {i+1}:**")
+        #             st.markdown(table_md) # Streamlit renders Markdown directly
+        #             st.markdown("---")
+        #     else:
+        #         st.info("No generic tables extracted or parsed for this document.")
 
-            # Display Queries (will show "No queries found" as expected)
-            queries = doc_result.get('Queries', {})
-            if queries:
-                st.markdown("---")
-                st.subheader("🔍 Query Results")
-                for alias, answer in queries.items():
-                    st.write(f"- **{alias}:** {answer}")
-            else:
-                st.info("No queries found for this document.")
+        #     # Display Queries (will show "No queries found" as expected)
+        #     queries = doc_result.get('Queries', {})
+        #     if queries:
+        #         st.markdown("---")
+        #         st.subheader("🔍 Query Results")
+        #         for alias, answer in queries.items():
+        #             st.write(f"- **{alias}:** {answer}")
+        #     else:
+        #         st.info("No queries found for this document.")
             
-            st.markdown("---") # Separator between document results
+        #     st.markdown("---") # Separator between document results
     else:
         st.info("Upload documents to see analysis results here.")
 
