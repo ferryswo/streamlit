@@ -71,6 +71,12 @@ def format_delivery_date(date_string):
         return parsed_date.strftime("%d/%m/%Y") # Format to DD/MM/YYYY
     except Exception:
         return date_string # Fallback in case of unexpected errors
+        
+def to_excel(df: pd.DataFrame) -> bytes:
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Data')
+    return output.getvalue()
 
 with st.container():
     # st.markdown('<div class="api-section">', unsafe_allow_html=True)
