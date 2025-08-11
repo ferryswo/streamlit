@@ -35,8 +35,8 @@ st.markdown('<h1 class="main-header">📁 API File Manager</h1>', unsafe_allow_h
 # Define your base API URL here (for both upload and results)
 # IMPORTANT: Use the root of your API Gateway deployment, e.g., "https://1234.execute-api.ap-southeast-4.amazonaws.com/prod"
 # The /prod/upload and /prod/results paths will be appended.
-BASE_API_ROOT_URL = "https://atgk2xx0si.execute-api.ap-southeast-1.amazonaws.com/dev" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
-S3_BUCKET_NAME = "tti-ocr-ap-southeast-1/" # Your S3 Bucket Name
+BASE_API_ROOT_URL = "https://a4hsl7pj9c.execute-api.ap-southeast-1.amazonaws.com/dev" # <--- UPDATE THIS TO YOUR API GATEWAY ROOT URL
+S3_BUCKET_NAME = "ocr-ap-southeast-4/" # Your S3 Bucket Name
 JAKARTA_TZ = pytz.timezone('Asia/Jakarta')
 
 # Initialize session state variables
@@ -184,18 +184,21 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
     
     # Only fetch if results are not already present (for all docs)
     if not st.session_state.analysis_results_list or len(st.session_state.analysis_results_list) < len(st.session_state.uploaded_document_ids):
-        st.info(f"Attempting to fetch results for {len(st.session_state.uploaded_document_ids)} documents.")
+        st.info(f"Attempting to fetch results for {len(st.session_state.uploaded_document_ids)} document(s).")
         fetch_placeholder = st.empty() # Create a placeholder for dynamic messages during fetch
 
-        # Loop through each uploaded document ID to fetch its results
+        # This will hold newly fetched results
         newly_fetched_results = []
+        # Keep track of documents that were successfully fetched in previous runs
+        existing_fetched_results_map = {res.get('documentId'): res for res in st.session_state.analysis_results_list}
+
         documents_still_pending = []
 
         for doc_id_to_fetch in st.session_state.uploaded_document_ids:
-            # Check if this document's results are already fetched
-            if any(res.get('documentId') == doc_id_to_fetch for res in st.session_state.analysis_results_list):
-                newly_fetched_results.append(next(res for res in st.session_state.analysis_results_list if res.get('documentId') == doc_id_to_fetch))
-                continue # Skip already fetched documents
+            # If results for this document are already in our session state, use them
+            if doc_id_to_fetch in existing_fetched_results_map:
+                newly_fetched_results.append(existing_fetched_results_map[doc_id_to_fetch])
+                continue # Skip fetching
             
             results_api_url = f"{BASE_API_ROOT_URL}/results/{doc_id_to_fetch}"
             
@@ -238,9 +241,12 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
         fetch_placeholder.empty() # Clear the overall spinner/messages
                 
     if st.session_state.analysis_results_list: # Loop through the list of results
+        st.markdown("---")
+        st.subheader("📋 Consolidated Document Data")
+
+        all_combined_table_data = [] # This list will hold rows from ALL documents
+
         for doc_result in st.session_state.analysis_results_list:
-            st.markdown(f"### Results for: `{doc_result.get('documentId', 'Unknown Document')}`")
-            
             # Prepare header fields for the combined table
             doc_id = doc_result.get('documentId', 'N/A')
             classification = doc_result.get('classifiedData', 'N/A')
@@ -265,14 +271,12 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             formatted_delivery_dates = [format_delivery_date(date_str) for date_str in raw_delivery_dates]
 
 
-            # --- CREATE COMBINED DATA FOR DATAFRAME ---
-            max_rows = max(len(qty_inbound_list), len(unit_price_list), len(item_name_list))
-            if max_rows == 0:
-                max_rows = 1
+            # --- CREATE COMBINED DATA FOR CURRENT DOCUMENT'S DATAFRAME ---
+            max_rows_doc = max(len(qty_inbound_list), len(unit_price_list), len(item_name_list))
+            if max_rows_doc == 0:
+                max_rows_doc = 1 # Ensures at least one row for header info even if no items
 
-            combined_table_data = []
-
-            for i in range(max_rows):
+            for i in range(max_rows_doc):
                 row = {
                     "Document ID": doc_id,
                     "Classification": classification,
@@ -287,39 +291,44 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                     "DeleveryOrderNumber": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",
                     "Date Of Delivery": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "" # Use formatted dates
                 }
-                combined_table_data.append(row)
+                all_combined_table_data.append(row) # Add row to the master list
+
+        # --- DISPLAY THE SINGLE CONSOLIDATED TABLE FOR ALL DOCUMENTS ---
+        if all_combined_table_data:
+            df_combined = pd.DataFrame(all_combined_table_data)
             
-            if combined_table_data:
-                # --- CONVERT TO DATAFRAME AND REORDER COLUMNS ---
-                df = pd.DataFrame(combined_table_data)
-                
-                desired_columns_order = [
-                    "Document ID", "Classification", "Classified At",
-                    "Invoice Number", "PO Number", "Tax Number",
-                    "ItemName", "Qty Inbound", "Qty Outbound", "UnitPrice",
-                    "DeleveryOrderNumber", "Date Of Delivery"
-                ]
-                
-                # Filter and reorder columns that actually exist in the DataFrame
-                existing_ordered_columns = [col for col in desired_columns_order if col in df.columns]
-                df = df[existing_ordered_columns]
+            desired_columns_order = [
+                "Document ID", "Classification", "Classified At",
+                "Invoice Number", "PO Number", "Tax Number",
+                "ItemName", "Qty Inbound", "Qty Outbound", "UnitPrice",
+                "DeleveryOrderNumber", "Date Of Delivery"
+            ]
+            
+            # Filter and reorder columns that actually exist in the DataFrame
+            existing_ordered_columns = [col for col in desired_columns_order if col in df_combined.columns]
+            df_combined = df_combined[existing_ordered_columns]
 
-                st.dataframe(df, use_container_width=True)
+            st.dataframe(df_combined, use_container_width=True)
 
-                # --- ADD DOWNLOAD BUTTONS ---
-                csv_data = df.to_csv(index=False).encode('utf-8')
-                
-                st.download_button(
-                    label="Download Data as CSV",
-                    data=csv_data,
-                    file_name=f"{os.path.basename(doc_id).replace('.', '_')}_analysis.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-            else:
-                st.info("No consolidated data available for display.")
+            # Add download button for the single combined table
+            csv_data = df_combined.to_csv(index=False).encode('utf-8')
+            
+            st.download_button(
+                label="Download All Consolidated Data as CSV",
+                data=csv_data,
+                file_name=f"all_documents_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        else:
+            st.info("No consolidated data available for display.")
 
-            st.subheader(f"Extracted Data Details (Raw JSON) for {os.path.basename(doc_id)}")
+        # --- DISPLAY RAW JSON AND OTHER SECTIONS PER DOCUMENT ---
+        st.markdown("---")
+        st.subheader("Raw JSON and Other Details (Per Document)")
+        for doc_result in st.session_state.analysis_results_list:
+            st.markdown(f"**Details for: `{doc_result.get('documentId', 'Unknown Document')}`**")
+            
             with st.expander("View Raw JSON Data"):
                 st.json(doc_result) # Display raw JSON for this specific document
 
@@ -346,6 +355,8 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                 st.info("No queries found for this document.")
             
             st.markdown("---") # Separator between document results
+    else:
+        st.info("Upload documents to see analysis results here.")
 
 if not uploaded_files: # Changed condition to uploaded_files
     st.info("💡 Please select file(s) to upload")
