@@ -72,7 +72,8 @@ def format_delivery_date(date_string):
     except Exception:
         return date_string # Fallback in case of unexpected errors
 
-def to_excel(df):
+def to_excel(df: pd.DataFrame) -> bytes:
+    """Convert DataFrame to Excel binary for download in Streamlit."""
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Data')
