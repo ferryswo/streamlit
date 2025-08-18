@@ -271,7 +271,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             # Apply format_delivery_date to each item in the list
             raw_InvoiceDueDate = structured_fields.get('InvoiceDueDate', 'N/A')
             raw_delivery_dates = structured_fields.get('DeleveryOrderDate', [])
-            formatted_delivery_dates = [format_delivery_date(date_str) for date_str in raw_delivery_dates]
+            formatted_delivery_dates = format_delivery_date(date_str) for date_str in raw_delivery_dates
             formatted_InvoiceDueDate = [format_delivery_date(date_str) for date_str in raw_InvoiceDueDate]
 
 
@@ -307,7 +307,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                 "Document ID", "Classification", "Classified At",
                 "PO No.", "Qty Inbound", "No. Surat Jalan Supplier",
                 "Tanggal SJ Supplier", "No Invoice Supplier", "No. Faktur Supplier",
-                "Qty Outbound", "ItemName", "UnitPrice", "Invoice Due Date", "Remarks"
+                "Qty Outbound", "ItemName", "UnitPrice", "Invoice Due Date", "Remark"
             ]
             
             # Filter and reorder columns that actually exist in the DataFrame
