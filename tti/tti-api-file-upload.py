@@ -266,10 +266,13 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             qty_outbound_list = structured_fields.get('Quantity', [])
             unit_price_list = structured_fields.get('UnitPrice', [])
             delivery_order_number_list = structured_fields.get('DeleveryOrderNumber', [])
+            Remark_list = structured_fields.get('Remark', [])
             
             # Apply format_delivery_date to each item in the list
+            raw_InvoiceDueDate = structured_fields.get('InvoiceDueDate', [])
             raw_delivery_dates = structured_fields.get('DeleveryOrderDate', [])
             formatted_delivery_dates = [format_delivery_date(date_str) for date_str in raw_delivery_dates]
+            formatted_InvoiceDueDate = [format_delivery_date(date_str) for date_str in raw_InvoiceDueDate]
 
 
             # --- CREATE COMBINED DATA FOR CURRENT DOCUMENT'S DATAFRAME ---
@@ -290,7 +293,9 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                     "Qty Outbound": qty_outbound_list[i] if i < len(qty_outbound_list) else "",
                     "UnitPrice": unit_price_list[i] if i < len(unit_price_list) else "",
                     "No. Surat Jalan Supplier": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",
-                    "Tanggal SJ Supplier": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "" # Use formatted dates
+                    "Tanggal SJ Supplier": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "", # Use formatted dates
+                    "Invoice Due Date": formatted_InvoiceDueDate[i] if i < len(formatted_InvoiceDueDate) else "", # Use formatted dates
+                    "Remarks": Remark_list[i] if i < len(Remark_list) else "",
                 }
                 all_combined_table_data.append(row) # Add row to the master list
 
@@ -302,7 +307,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                 "Document ID", "Classification", "Classified At",
                 "PO No.", "Qty Inbound", "No. Surat Jalan Supplier",
                 "Tanggal SJ Supplier", "No Invoice Supplier", "No. Faktur Supplier",
-                "Qty Outbound", "ItemName", "UnitPrice"
+                "Qty Outbound", "ItemName", "UnitPrice", "Invoice Due Date", "Remarks"
             ]
             
             # Filter and reorder columns that actually exist in the DataFrame
