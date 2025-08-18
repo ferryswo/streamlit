@@ -271,7 +271,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             # Apply format_delivery_date to each item in the list
             raw_InvoiceDueDate = structured_fields.get('InvoiceDueDate', 'N/A')
             raw_delivery_dates = structured_fields.get('DeleveryOrderDate', [])
-            formatted_InvoiceDueDate = datetime.strptime(raw_InvoiceDueDate, "%Y/%m/%d")
+            formatted_InvoiceDueDate = format_delivery_date(raw_InvoiceDueDate)
             formatted_delivery_dates = [format_delivery_date(date_str) for date_str in raw_delivery_dates]
 
 
