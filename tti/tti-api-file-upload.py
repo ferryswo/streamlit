@@ -259,6 +259,7 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             invoice_no = structured_fields.get('InvoiceNumber', 'N/A')
             po_no = structured_fields.get('PONo', 'N/A')
             tax_no = structured_fields.get('TaxNo', 'N/A')
+            Remark = structured_fields.get('Remark', 'N/A')
 
             # Get item details (list fields)
             item_name_list = structured_fields.get('ItemName', [])
@@ -266,10 +267,9 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
             qty_outbound_list = structured_fields.get('Quantity', [])
             unit_price_list = structured_fields.get('UnitPrice', [])
             delivery_order_number_list = structured_fields.get('DeleveryOrderNumber', [])
-            Remark_list = structured_fields.get('Remark', [])
             
             # Apply format_delivery_date to each item in the list
-            raw_InvoiceDueDate = structured_fields.get('InvoiceDueDate', [])
+            raw_InvoiceDueDate = structured_fields.get('InvoiceDueDate', 'N/A')
             raw_delivery_dates = structured_fields.get('DeleveryOrderDate', [])
             formatted_delivery_dates = [format_delivery_date(date_str) for date_str in raw_delivery_dates]
             formatted_InvoiceDueDate = [format_delivery_date(date_str) for date_str in raw_InvoiceDueDate]
@@ -294,8 +294,8 @@ if st.session_state.uploaded_document_ids: # Check if there are any IDs to fetch
                     "UnitPrice": unit_price_list[i] if i < len(unit_price_list) else "",
                     "No. Surat Jalan Supplier": delivery_order_number_list[i] if i < len(delivery_order_number_list) else "",
                     "Tanggal SJ Supplier": formatted_delivery_dates[i] if i < len(formatted_delivery_dates) else "", # Use formatted dates
-                    "Invoice Due Date": formatted_InvoiceDueDate[i] if i < len(formatted_InvoiceDueDate) else "", # Use formatted dates
-                    "Remarks": Remark_list[i] if i < len(Remark_list) else "",
+                    "Invoice Due Date": formatted_InvoiceDueDate,
+                    "Remark": Remark
                 }
                 all_combined_table_data.append(row) # Add row to the master list
 
